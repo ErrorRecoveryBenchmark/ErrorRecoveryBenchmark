@@ -1,0 +1,127 @@
+# ═══════════════════════════════════════════════════════
+# Task Configuration: Stack
+# ═══════════════════════════════════════════════════════
+
+task_name: "stack"
+env_name: "Stack"
+task_description: "Stack the red cube (cubeA) on top of the green cube (cubeB)"
+
+# Environment configuration
+env_args:
+  env_name: "Stack"
+  robots: ["Panda"]
+  gripper_types: "default"
+  has_renderer: false
+  has_offscreen_renderer: false
+  use_camera_obs: false
+  use_object_obs: true
+  control_freq: 20
+  horizon: 1000
+  ignore_done: true
+
+# Object configuration
+objects:
+  - name: "cubeA"
+    body_name: "cubeA_main"
+    geom_names: ["cubeA_g0"]
+    grasp_geoms: ["cubeA_g0"]
+    initial_pos_range:
+      x: [-0.08, 0.08]
+      y: [-0.08, 0.08]
+      z: [0.0, 0.0]
+  - name: "cubeB"
+    body_name: "cubeB_main"
+    geom_names: ["cubeB_g0"]
+    grasp_geoms: ["cubeB_g0"]
+    initial_pos_range:
+      x: [-0.08, 0.08]
+      y: [-0.08, 0.08]
+      z: [0.0, 0.0]
+
+# Target position configuration (on top of cubeB)
+target:
+  pos_range:
+    x: [-0.08, 0.08]
+    y: [-0.08, 0.08]
+    z: [0.82, 0.88]
+  radius: 0.03
+
+# Task phase definitions
+phases:
+  reach: "eef_to_obj_dist <= 0.06"
+  grasp: "eef_to_obj_dist <= 0.06 and gripper_closed_norm >= 0.5"
+  lift: "object_grasped and object_pos[2] >= 0.84"
+  transport: "object_grasped and obj_to_target_dist <= 0.05"
+  place: "not object_grasped and cubeA_on_cubeB"
+  done: "place and success"
+
+# Threshold configuration
+thresholds:
+  reach: 0.06
+  grasp_closed: 0.05
+  grasp_eef_dist: 0.06
+  lift_height: 0.84
+  transport: 0.05
+  place_height: 0.02
+  place_drop_height: 0.05
+
+# Sub-goal weights
+completion_weights:
+  reach: 0.1
+  grasp: 0.2
+  lift: 0.2
+  transport: 0.3
+  place: 0.2
+
+recovery_augmentation:
+  placement_refs:
+    cubeA: cubeB
+
+mimicgen_source_validation:
+  settle_linvel_threshold: 0.01
+  settle_angvel_threshold: 0.05
+  settle_hold_frames: 10
+  max_settle_steps: 40
+  min_pre_grasp_frames: 5
+  min_post_grasp_frames: 21
+  require_final_replay_success: true
+  reject_if_success_at_start: true
+
+# Gripper configuration
+gripper:
+  type: "two_finger"
+  open_qpos: [0.04, -0.04]
+  close_qpos: [0.0, 0.0]
+  grasp_threshold: 0.02
+
+# Controller configuration
+controller: "OSC"
+action_scale: 1.0
+
+# Workspace limits
+workspace:
+  x: [-0.6, 0.6]
+  y: [-0.6, 0.6]
+  z: [0.0, 2.0]
+
+# Physics parameters
+physics:
+  gravity: -9.81
+  timestep: 0.002
+  control_freq: 20
+
+# Success criteria
+success:
+  any_of:
+    - condition: "task_success"
+      threshold: 1.0
+
+# Failure criteria
+failure:
+  any_of:
+    - condition: "object_dropped"
+      threshold: 0.75
+    - condition: "object_tipped"
+      angle_threshold: 0.52
+    - condition: "timeout"
+      max_steps: 1000

@@ -1,0 +1,248 @@
+# ═══════════════════════════════════════════════════════
+# RecoverBench v5.0 Configuration
+# Error Skill Architecture
+# ═══════════════════════════════════════════════════════
+
+version: "v5.0"
+
+paths:
+  dataset_path: null  # DEPRECATED: task_registry.yaml provides per-task dataset_path; fallback only
+  output_dir: "error_benchmark/outputs/v5/pick_place"  # legacy default; most scripts use clean_trajectories_dir / opportunity_maps_dir below
+  task_config: "error_benchmark/configs/tasks/pick_place.yaml"
+  clean_trajectories_dir: "error_benchmark/outputs/v5/clean_trajectories"
+  opportunity_maps_dir: "error_benchmark/outputs/v5/opportunity_maps"
+  schedules_dir: "error_benchmark/outputs/v5/schedules"
+
+# ─── Step 0: Clean Trajectory Collection ───
+clean_trajectories:
+  sources:
+    demo:
+      enabled: true
+      num_demos: 20
+    vla_pi0:
+      enabled: false
+      num_rollouts: 10
+      max_steps: 400
+      server_host: "localhost"
+      server_port: 5555
+    vla_pi05:
+      enabled: false
+      num_rollouts: 10
+      max_steps: 400
+      server_host: "localhost"
+      server_port: 5557
+    bc_rnn:
+      enabled: false
+      min_successes: 10
+      max_attempts: 100
+      max_steps: 400
+  seed: 42
+
+# ─── Step 0b: Offline Scanning ───
+scanning:
+  # Which skills to enable during scanning
+  enabled_skills:
+    - "stuck_no_progress"
+    - "position_error"
+    - "drop_in_transit"
+    - "drop_at_wrong_place"
+    - "grasp_misalignment"
+    - "collision_holding"
+    - "collision_empty"
+    - "collision_eef_object"
+    - "collision_self"
+    - "wrong_object"
+    - "trajectory_regression"
+    - "grasp_wrong_pose"
+  # Minimum frames between injection opportunities (per skill)
+  min_frame_gap: 10
+
+# ─── Step 0c: Quota Scheduling ───
+quota:
+  target_per_subtype: 10          # Episodes per (task, error_name, degree)
+  priority_order:                 # Fill order: high-priority subtypes first
+    - "drop_in_transit_D0"
+    - "drop_at_wrong_place_D0"
+    - "position_error_D0"
+    - "grasp_misalignment_D0"
+    - "stuck_no_progress_D0"
+  max_attempts_per_opportunity: 3 # Retries for failed injections
+
+# ─── Step 1: Injection Execution ───
+injection:
+  context_window: 50              # Frames to replay before injection (sim state + rendering)
+  max_injection_steps: 30         # Max steps for skill.inject()
+  post_injection_steps: 20        # Steps to observe after injection (validation)
+  seed: 42
+
+# ─── Error Skill Parameters ───
+# Degrees: D0 = easy (small displacement <10-15cm, prefer no rotation)
+#          D1 = hard (large displacement >10-15cm, prefer rotation)
+error_skills:
+  # E10: stuck_no_progress (D0/D1)
+  stuck_no_progress:
+    min_progress_threshold: 0.002 # m/step - below this = stuck
+    D0:
+      freeze_steps: 20              # Neutral-action freeze
+    D1:
+      freeze_steps: 40              # Longer freeze for harder recovery
+
+  # E12: position_error (D0/D1)
+  position_error:
+    D0:
+      offset_range: [0.03, 0.10]    # Small translation offset (m)
+    D1:
+      offset_range: [0.10, 0.20]    # Large translation offset (m)
+      rotation_range: [0.15, 0.8]   # Rotation offset range (rad)
+
+  # E2: drop_in_transit (D0/D1)
+  drop_in_transit:
+    target_distance_threshold: 0.10  # EEF must be >10cm from target
+    orientation_threshold: 0.5       # rad — D0 vs D1 boundary
+    D0:
+      min_hold_height: 0.93          # table(0.80) + obj_height(0.08) + clearance(0.05)
+      settle_steps: 80               # More settle time for D0 to stabilize orientation
+    D1:
+      min_hold_height: 0.93
+      settle_steps: 40
+
+  # E3: drop_at_wrong_place (D0/D1) — offset or interaction mode
+  drop_at_wrong_place:
+    target_distance_threshold: 0.10  # EEF must be <10cm from target
+    orientation_threshold: 0.5
+    D0:
+      min_hold_height: 0.93
+      eef_offset_range: [0.05, 0.10]  # Offset away from target (offset mode)
+      drop_height_above: [0.05, 0.10]  # Height above nontarget (interaction mode)
+      approach_steps: 60               # Steps to move above nontarget
+      settle_steps: 40
+    D1:
+      min_hold_height: 0.93
+      eef_offset_range: [0.10, 0.15]  # Larger offset
+      drop_height_above: [0.05, 0.10]
+      approach_steps: 60
+      settle_steps: 40
+
+  # E1: grasp_misalignment (D0/D1)
+  grasp_misalignment:
+    D0:
+      lateral_offset: [0.02, 0.05]    # Small lateral offset
+      gripper_close_steps: 30
+    D1:
+      lateral_offset: [0.04, 0.10]    # Larger lateral offset
+      rotation_offset: [0.15, 0.6]    # + rotation
+      gripper_close_steps: 30
+
+  # E4: collision_holding (D0/D1)
+  collision_holding:
+    D0:
+      down_range: [0.05, 0.10]        # Small downward movement
+    D1:
+      down_range: [0.08, 0.15]        # Larger downward + lateral
+      lateral_range: [0.06, 0.12]
+
+  # E5: collision_empty (D0/D1)
+  collision_empty:
+    D0:
+      speed_scale: 1.0
+      max_steps: 30
+    D1:
+      speed_scale: 2.0
+      max_steps: 40
+
+  # E6: collision_eef_object (D0/D1)
+  collision_eef_object:
+    D0:
+      max_steps: 35
+    D1:
+      max_steps: 40
+
+  # E7: collision_self (D0/D1)
+  collision_self:
+    D0:
+      toward_base_offset: [0.10, 0.25]
+    D1:
+      toward_base_offset: [0.15, 0.25]
+      rotation_offset: [0.2, 0.5]
+
+  # E8: wrong_object (D0/D1) - multi-object tasks only (graspable objects)
+  wrong_object:
+    max_dist_to_wrong_object: 0.15
+    D0:
+      approach_non_target: true
+    D1:
+      approach_non_target: true
+      rotation_offset: [0.1, 0.3]
+
+  # E9: trajectory_regression (D0/D1)
+  trajectory_regression:
+    D0:
+      reverse_steps: [10, 20]        # Small reversal
+    D1:
+      reverse_steps: [20, 30]        # Larger reversal
+      rotation_noise: [0.05, 0.15]
+
+  # E11: grasp_wrong_pose (D0/D1)
+  grasp_wrong_pose:
+    D0:
+      rotation_offset: [0.1, 0.25]   # Small rotation error
+      min_rotation_deviation: 0.08
+    D1:
+      rotation_offset: [0.3, 1.0]    # Large rotation error
+      min_rotation_deviation: 0.15
+
+# ─── Filters (reused from v4) ───
+filters:
+  workspace:
+    eef:
+      x: [-1.0, 1.0]
+      y: [-1.0, 1.0]
+      z: [0.0, 2.0]
+    object:
+      x: [-1.0, 1.0]
+      y: [-1.0, 1.0]
+      z: [-0.5, 2.0]
+  stability:
+    warm_start_steps: 5
+    max_qvel: 15.0
+    max_obj_linvel: 2.5
+    reject_nan: true
+
+# ─── Replay (reused from v4) ───
+replay:
+  max_acceptable_drift: 0.005
+  warm_start_steps: 5
+
+# ─── Evaluation (reused from v4) ───
+evaluation:
+  max_steps: 400
+  warm_start_steps: 5
+  seed_mode: "both"
+  seeds_per_scene: 3
+  random_action_scale: 0.1
+  models:
+    bc_rnn: "bc_rnn_checkpoints/bc_rnn_pick_place/20260217112532/models/model_epoch_600.pth"  # resolve via ${BC_RNN_CHECKPOINT_ROOT} or project-root-relative
+    random: null
+    vla_pi0:
+      type: vla_server
+      port: 5555
+    vla_pi05:
+      type: vla_server
+      port: 5557
+
+# ─── Metrics (reused from v4) ───
+metrics:
+  bootstrap_n: 10000
+  bootstrap_ci: 0.95
+
+# ─── Camera (reused from v4) ───
+camera:
+  cameras: ["agentview", "robot0_eye_in_hand"]
+  resolution: [256, 256]
+
+# ─── VLA Server (reused from v4) ───
+vla_server:
+  default_port: 5555
+  default_host: "localhost"
+  connection_timeout: 30
+  replan_interval: 5

@@ -1,0 +1,118 @@
+# ═══════════════════════════════════════════════════════
+# Task Configuration: Coffee
+# ═══════════════════════════════════════════════════════
+
+task_name: "coffee"
+env_name: "Coffee"
+task_description: "Pick up a coffee pod and insert it into the coffee machine, then close the lid"
+
+# Environment configuration
+env_args:
+  env_name: "Coffee"
+  robots: ["Panda"]
+  gripper_types: "default"
+  has_renderer: false
+  has_offscreen_renderer: false
+  use_camera_obs: false
+  use_object_obs: true
+  control_freq: 20
+  horizon: 1000
+  ignore_done: true
+
+# Object configuration
+objects:
+  - name: "coffee_pod"
+    body_name: "coffee_pod"
+    geom_names: ["coffee_pod_g0"]
+    grasp_geoms: ["coffee_pod_g0"]
+    initial_pos_range:
+      x: [0.0, 0.15]
+      y: [-0.15, 0.05]
+      z: [0.0, 0.0]
+  - name: "coffee_machine"
+    body_name: "coffee_machine"
+    geom_names: ["coffee_machine_base_g0"]
+    grasp_geoms: []
+    initial_pos_range:
+      x: [0.18, 0.26]
+      y: [0.08, 0.18]
+      z: [0.0, 0.0]
+
+# Target position configuration (pod holder on machine)
+target:
+  pos_range:
+    x: [0.18, 0.26]
+    y: [0.08, 0.18]
+    z: [0.0, 0.05]
+  radius: 0.03
+
+# Task phase definitions
+phases:
+  reach: "eef_to_obj_dist <= 0.06"
+  grasp: "eef_to_obj_dist <= 0.06 and gripper_closed_norm >= 0.5"
+  lift: "object_grasped and object_pos[2] >= 0.85"
+  transport: "object_grasped and obj_to_target_dist <= 0.05"
+  insert: "object_grasped and obj_to_target_dist <= 0.03"
+  done: "task_success"
+
+# Threshold configuration
+thresholds:
+  reach: 0.06
+  grasp_closed: 0.05
+  grasp_eef_dist: 0.06
+  lift_height: 0.85
+  transport: 0.05
+  insert_dist: 0.03
+  place_height: 0.02
+  place_drop_height: 0.05
+
+# Sub-goal weights
+completion_weights:
+  reach: 0.1
+  grasp: 0.2
+  lift: 0.15
+  transport: 0.25
+  insert: 0.3
+
+# Gripper configuration
+gripper:
+  type: "two_finger"
+  open_qpos: [0.04, -0.04]
+  close_qpos: [0.0, 0.0]
+  grasp_threshold: 0.02
+
+# Controller configuration
+controller: "OSC"
+action_scale: 1.0
+
+# Workspace limits
+workspace:
+  x: [-0.6, 0.6]
+  y: [-0.6, 0.6]
+  z: [0.0, 2.0]
+
+# Physics parameters
+physics:
+  gravity: -9.81
+  timestep: 0.002
+  control_freq: 20
+
+# Success criteria
+success:
+  any_of:
+    - condition: "task_success"
+      threshold: 1.0
+
+# Failure criteria
+failure:
+  any_of:
+    - condition: "object_dropped"
+      threshold: 0.75
+    - condition: "object_tipped"
+      angle_threshold: 0.52
+    - condition: "timeout"
+      max_steps: 1000
+
+recovery_augmentation:
+  placement_refs:
+    coffee_pod: coffee_machine

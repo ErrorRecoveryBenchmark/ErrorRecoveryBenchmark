@@ -1,0 +1,3 @@
+robosuite_version=1.4.1
+robosuite_commit=c848ca848020d0c4ccdd10c5056bd06f2a195ba2
+robosuite_install_url=git+https://github.com/ARISE-Initiative/robosuite.git@c848ca848020d0c4ccdd10c5056bd06f2a195ba2#egg=robosuite

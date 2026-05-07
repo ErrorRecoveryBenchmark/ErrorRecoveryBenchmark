@@ -1,0 +1,26 @@
+# Portable task registry (relative paths for recovery collection)
+tasks:
+  pick_place:
+    task_config: "error_benchmark/configs/tasks/pick_place.yaml"
+    dataset_path: "data/pick_place.hdf5"
+    output_subdir: "pick_place"
+  coffee:
+    task_config: "error_benchmark/configs/tasks/coffee.yaml"
+    dataset_path: "data/coffee.hdf5"
+    output_subdir: "coffee"
+  stack:
+    task_config: "error_benchmark/configs/tasks/stack.yaml"
+    dataset_path: "data/stack.hdf5"
+    output_subdir: "stack"
+  stack_three:
+    task_config: "error_benchmark/configs/tasks/stack_three.yaml"
+    dataset_path: "data/stack_three.hdf5"
+    output_subdir: "stack_three"
+  threading:
+    task_config: "error_benchmark/configs/tasks/threading.yaml"
+    dataset_path: "data/threading.hdf5"
+    output_subdir: "threading"
+  three_piece_assembly:
+    task_config: "error_benchmark/configs/tasks/three_piece_assembly.yaml"
+    dataset_path: "data/three_piece_assembly.hdf5"
+    output_subdir: "three_piece_assembly"

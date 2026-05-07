@@ -1,0 +1,147 @@
+# ═══════════════════════════════════════════════════════
+# Task Configuration: Pick and Place
+# ═══════════════════════════════════════════════════════
+
+task_name: "pick_place"
+env_name: "PickPlace"
+task_description: "Pick up an object and place it at a target location"
+
+# Environment configuration
+env_args:
+  env_name: "PickPlace"
+  robots: ["Sawyer"]  # Changed from Panda to Sawyer to match existing demos
+  gripper_types: "default"
+  has_renderer: false
+  has_offscreen_renderer: false
+  use_camera_obs: false
+  use_object_obs: true
+  control_freq: 20
+  horizon: 3000
+  ignore_done: true
+
+# Object configuration
+objects:
+  - name: "Milk"
+    body_name: "Milk_main"  # MuJoCo body name
+    geom_names: ["Milk_g0"]  # For collision detection
+    grasp_geoms: ["Milk_g0"]  # For grasp detection
+    initial_pos_range:  # Randomization range
+      x: [0.45, 0.55]
+      y: [-0.05, 0.05]
+      z: [0.0, 0.0]  # On the table surface
+  - name: "Bread"
+    body_name: "Bread_main"
+    geom_names: ["Bread_g0"]
+    grasp_geoms: ["Bread_g0"]
+    initial_pos_range:
+      x: [0.45, 0.55]
+      y: [-0.05, 0.05]
+      z: [0.0, 0.0]
+  - name: "Cereal"
+    body_name: "Cereal_main"
+    geom_names: ["Cereal_g0"]
+    grasp_geoms: ["Cereal_g0"]
+    initial_pos_range:
+      x: [0.45, 0.55]
+      y: [-0.05, 0.05]
+      z: [0.0, 0.0]
+  - name: "Can"
+    body_name: "Can_main"
+    geom_names: ["Can_g0"]
+    grasp_geoms: ["Can_g0"]
+    initial_pos_range:
+      x: [0.45, 0.55]
+      y: [-0.05, 0.05]
+      z: [0.0, 0.0]
+
+# Target position configuration
+target:
+  pos_range:  # Target position randomization range
+    x: [0.45, 0.55]
+    y: [0.15, 0.25]
+    z: [0.0, 0.0]  # On the table surface
+  radius: 0.05  # Target area radius
+
+# Task phase definitions
+# Used by detector/validator to determine current phase
+phases:
+  # Reach: EEF approaches object
+  reach: "eef_to_obj_dist <= 0.06"
+
+  # Grasp: EEF near object + gripper closed
+  grasp: "eef_to_obj_dist <= 0.06 and gripper_closed_norm >= 0.05"
+
+  # Lift: Object lifted
+  lift: "object_grasped and object_pos[2] >= 0.85"
+
+  # Transport: Object near target
+  transport: "object_grasped and obj_to_target_dist <= 0.05"
+
+  # Place: Object placed at target location
+  place: "not object_grasped and obj_to_target_dist <= 0.05 and object_pos[2] <= 0.02"
+
+  # Done: Task complete
+  done: "place and success"
+
+# Threshold configuration (for EnvWrapper.get_task_phase and get_task_completion_stages)
+thresholds:
+  reach: 0.06              # meters
+  grasp_closed: 0.05       # Normalized gripper closure (Sawyer: ~0.025 open, ~0.08 gripping)
+  grasp_eef_dist: 0.06     # meters
+  lift_height: 0.85        # meters (above table)
+  transport: 0.05          # meters
+  place_height: 0.02       # meters
+  place_drop_height: 0.05  # meters (drop counts as failure)
+
+# Sub-goal weights (for Recovery Progress computation)
+# Sum should = 1.0
+completion_weights:
+  reach: 0.1
+  grasp: 0.2
+  lift: 0.2
+  transport: 0.3
+  place: 0.2
+
+# Gripper configuration
+gripper:
+  type: "two_finger"  # "two_finger" | "three_finger" | "suction"
+  open_qpos: [0.0, 0.0]      # Joint position when fully open
+  close_qpos: [0.04, -0.04]  # Joint position when fully closed
+  grasp_threshold: 0.02      # Grasp detection threshold (contact force)
+
+# Controller configuration
+controller: "OSC"  # "OSC" | "IK" | "JOINT"
+action_scale: 1.0
+
+# Workspace limits
+workspace:
+  x: [-0.6, 0.6]
+  y: [-0.6, 0.6]
+  z: [0.0, 2.0]  # Extended to include higher positions
+
+# Physics parameters
+physics:
+  gravity: -9.81
+  timestep: 0.002
+  control_freq: 20
+
+# Success criteria
+success:
+  # Any condition satisfied = success
+  any_of:
+    - condition: "object_in_target"
+      threshold: 0.02  # Object within target area
+    - condition: "object_lifted_and_placed"
+      lift_height: 0.85
+      place_height: 0.02
+      target_radius: 0.05
+
+# Failure criteria
+failure:
+  any_of:
+    - condition: "object_dropped"
+      threshold: 0.75  # Object drop height
+    - condition: "object_tipped"
+      angle_threshold: 0.52  # 30 degrees
+    - condition: "timeout"
+      max_steps: 3000

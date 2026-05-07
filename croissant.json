@@ -1,0 +1,145 @@
+{
+  "@context": {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "data": {"@id": "cr:data", "@type": "@json"},
+    "dataBiases": "cr:dataBiases",
+    "dataCollection": "cr:dataCollection",
+    "dataType": {"@id": "cr:dataType", "@type": "@vocab"},
+    "dct": "http://purl.org/dc/terms/",
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "personalSensitiveInformation": "cr:personalSensitiveInformation",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform"
+  },
+  "@type": "sc:Dataset",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "name": "ErrorRecoveryBench",
+  "description": "A comprehensive benchmark for evaluating robotic manipulation error recovery. The benchmark provides a systematic framework covering 12 error types across 6 manipulation tasks with 2 difficulty levels, enabling standardized evaluation of error detection and recovery policies. Data is generated in MuJoCo simulation using robosuite environments with programmatic error injection and human teleoperation for recovery demonstrations.",
+  "url": "https://github.com/anonymous-erb/ErrorRecoveryBench",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "version": "1.0.0",
+  "datePublished": "2026-05-06",
+  "keywords": [
+    "robotics",
+    "manipulation",
+    "error recovery",
+    "benchmark",
+    "imitation learning",
+    "MuJoCo",
+    "robosuite",
+    "teleoperation"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "Anonymous (double-blind review)"
+  },
+  "distribution": [
+    {
+      "@type": "cr:FileObject",
+      "@id": "error-scenes-archive",
+      "name": "error_scenes.tar.gz",
+      "description": "Error scene states (JSON metadata + NPZ simulation states) for 6 tasks, ~5500 scenes total.",
+      "contentSize": "124 MB",
+      "encodingFormat": "application/x-tar",
+      "contentUrl": "https://huggingface.co/datasets/anonymous-erb/ErrorRecoveryBench/resolve/main/error_scenes.tar.gz"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "recovery-demos-human-archive",
+      "name": "recovery_demos_human.tar.gz",
+      "description": "Human teleoperation recovery demonstrations (NPZ) for 6 tasks across all error subtypes.",
+      "contentSize": "6.6 GB",
+      "encodingFormat": "application/x-tar",
+      "contentUrl": "https://huggingface.co/datasets/anonymous-erb/ErrorRecoveryBench/resolve/main/recovery_demos_human.tar.gz"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "recovery-demos-augmented-archive",
+      "name": "recovery_demos_augmented.tar.gz",
+      "description": "MimicGen-augmented recovery demonstrations (NPZ) generated from human seed demos.",
+      "contentSize": "1.8 GB",
+      "encodingFormat": "application/x-tar",
+      "contentUrl": "https://huggingface.co/datasets/anonymous-erb/ErrorRecoveryBench/resolve/main/recovery_demos_augmented.tar.gz"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "mimicgen-prepared-archive",
+      "name": "mimicgen_prepared.tar.gz",
+      "description": "Pre-processed MimicGen source datasets (HDF5) for data augmentation pipeline.",
+      "contentSize": "22 GB",
+      "encodingFormat": "application/x-tar",
+      "contentUrl": "https://huggingface.co/datasets/anonymous-erb/ErrorRecoveryBench/resolve/main/mimicgen_prepared.tar.gz"
+    }
+  ],
+  "recordSet": [
+    {
+      "@type": "cr:RecordSet",
+      "@id": "error-scenes",
+      "name": "error_scenes",
+      "description": "Each record represents one injected error scene: a simulation snapshot where a specific error has been programmatically triggered during task execution.",
+      "field": [
+        {"@type": "cr:Field", "@id": "error-scenes/task_name", "name": "task_name", "description": "Manipulation task identifier", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "error-scenes/error_name", "name": "error_name", "description": "Error type from the 12-type taxonomy (e.g., grasp_misalignment, drop_in_transit)", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "error-scenes/degree", "name": "degree", "description": "Difficulty level: D0 (mild) or D1 (severe)", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "error-scenes/scene_id", "name": "scene_id", "description": "Unique scene identifier", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "error-scenes/sim_state", "name": "sim_state", "description": "Full MuJoCo simulation state (qpos, qvel, etc.) as NPZ", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "error-scenes/metadata", "name": "metadata", "description": "JSON metadata including injection parameters, context trajectory info, and error-specific details", "dataType": "sc:Text"}
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "recovery-demos",
+      "name": "recovery_demos",
+      "description": "Each record is one recovery demonstration: a trajectory from an error state back to successful task completion, collected via human teleoperation or MimicGen augmentation.",
+      "field": [
+        {"@type": "cr:Field", "@id": "recovery-demos/task_name", "name": "task_name", "description": "Manipulation task (pick_place, stack, coffee, threading, stack_three, three_piece_assembly)", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "recovery-demos/error_name", "name": "error_name", "description": "Error type that triggered this recovery", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "recovery-demos/degree", "name": "degree", "description": "Error severity: D0 or D1", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "recovery-demos/scene_id", "name": "scene_id", "description": "Source error scene identifier", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "recovery-demos/demo_id", "name": "demo_id", "description": "Unique demonstration identifier", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "@id": "recovery-demos/actions", "name": "actions", "description": "Robot action sequence, shape (T, action_dim)", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/states", "name": "states", "description": "Full simulation states at each timestep, shape (T, state_dim)", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/eef_positions", "name": "eef_positions", "description": "End-effector positions, shape (T, 3)", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/eef_orientations", "name": "eef_orientations", "description": "End-effector orientations as quaternions, shape (T, 4)", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/gripper_states", "name": "gripper_states", "description": "Gripper open/close states, shape (T, gripper_dim)", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/camera_images", "name": "camera_images", "description": "RGB camera observations, shape (T, H, W, 3), uint8", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/target_poses", "name": "target_poses", "description": "MimicGen-compatible target poses for augmentation, shape (num_subtasks, 4, 4)", "dataType": "cr:data"},
+        {"@type": "cr:Field", "@id": "recovery-demos/num_steps", "name": "num_steps", "description": "Number of timesteps in this demonstration", "dataType": "sc:Integer"},
+        {"@type": "cr:Field", "@id": "recovery-demos/success", "name": "success", "description": "Whether recovery was successful (task completed)", "dataType": "sc:Boolean"},
+        {"@type": "cr:Field", "@id": "recovery-demos/replay_passed", "name": "replay_passed", "description": "Whether action replay validation passed", "dataType": "sc:Boolean"},
+        {"@type": "cr:Field", "@id": "recovery-demos/validation_passed", "name": "validation_passed", "description": "Whether overall quality validation passed", "dataType": "sc:Boolean"}
+      ]
+    }
+  ],
+  "cr:rai": {
+    "dataCollection": "All data is generated in MuJoCo physics simulation using the robosuite framework. Error scenes are created by programmatic injection of 12 error types into clean manipulation trajectories. Recovery demonstrations are collected via human teleoperation using a SpaceMouse 3D input device. Augmented demonstrations are generated using MimicGen-style trajectory adaptation. No real-world data, human subjects, or personal information is involved.",
+    "personalSensitiveInformation": "None. The dataset is entirely synthetic, generated in physics simulation. No personal data, faces, speech, or identifiable information is present.",
+    "dataBiases": "The benchmark uses a single robot embodiment (Franka Panda) in tabletop manipulation settings. Error injection parameters are hand-designed based on common failure modes observed in robotic manipulation. Human recovery demonstrations reflect the skill level and strategies of a small set of operators, which may not represent all possible recovery approaches. The 6 tasks are limited to tabletop pick-and-place style manipulation.",
+    "isLiveDataset": false
+  }
+}

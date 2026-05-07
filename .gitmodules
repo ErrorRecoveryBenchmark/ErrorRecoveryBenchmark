@@ -1,0 +1,11 @@
+[submodule "shared/mimicgen_workspace/robosuite"]
+	path = shared/mimicgen_workspace/robosuite
+	url = https://github.com/ARISE-Initiative/robosuite.git
+
+[submodule "shared/mimicgen_workspace/mimicgen"]
+	path = shared/mimicgen_workspace/mimicgen
+	url = https://github.com/NVlabs/mimicgen.git
+
+[submodule "shared/mimicgen_workspace/robosuite-task-zoo"]
+	path = shared/mimicgen_workspace/robosuite-task-zoo
+	url = https://github.com/ARISE-Initiative/robosuite-task-zoo.git

@@ -1,0 +1,373 @@
+# ═══════════════════════════════════════════════════════
+# Recovery Demo Collection & Augmentation Configuration
+# ═══════════════════════════════════════════════════════
+
+version: "v1.0"
+
+# ─── Recovery Behavior Groups (RBG) ───
+# 24 subtypes grouped by recovery motor primitive
+recovery_behavior_groups:
+  RBG_A:  # Re-grasp
+    name: "re_grasp"
+    description: "Re-acquire misaligned object → deliver to target"
+    subtask_sequence: ["retract", "re_orient", "re_grasp", "re_lift", "re_transport", "re_place"]
+    subtypes:
+      - "grasp_misalignment_D0"
+      - "grasp_misalignment_D1"
+      - "grasp_wrong_pose_D0"
+      - "grasp_wrong_pose_D1"
+    representative: "grasp_misalignment_D0"
+
+  RBG_B:  # Retrieve
+    name: "retrieve"
+    description: "Re-acquire dropped object → deliver to target"
+    subtask_sequence: ["navigate_to_object", "re_grasp", "re_lift", "re_transport", "re_place"]
+    subtypes:
+      - "drop_in_transit_D0"
+      - "drop_in_transit_D1"
+      - "drop_at_wrong_place_D0"
+      - "drop_at_wrong_place_D1"
+    representative: "drop_in_transit_D0"
+
+  RBG_C:  # Retract (collision recovery)
+    name: "retract"
+    description: "Back away → re-approach target"
+    subtask_sequence: ["retract", "navigate_to_object"]
+    subtypes:
+      - "collision_holding_D0"
+      - "collision_holding_D1"
+      - "collision_empty_D0"
+      - "collision_empty_D1"
+      - "collision_eef_object_D0"
+      - "collision_eef_object_D1"
+      - "collision_self_D0"
+      - "collision_self_D1"
+    representative: "collision_holding_D0"
+
+  RBG_D:  # Redirect
+    name: "redirect"
+    description: "Release wrong object → re-acquire correct object → deliver"
+    subtask_sequence: ["release", "navigate_to_object", "re_grasp", "re_lift", "re_transport", "re_place"]
+    subtypes:
+      - "wrong_object_D0"
+      - "wrong_object_D1"
+    representative: "wrong_object_D0"
+
+  RBG_E:  # Realign
+    name: "realign"
+    description: "Correct position/trajectory → resume task"
+    subtask_sequence: ["correct_position", "resume_task"]
+    subtypes:
+      - "trajectory_regression_D0"
+      - "trajectory_regression_D1"
+      - "stuck_no_progress_D0"
+      - "stuck_no_progress_D1"
+      - "position_error_D0"
+      - "position_error_D1"
+    representative: "position_error_D0"
+
+# ─── Task tiers and demo allocations ───
+task_tiers:
+  tier_1:  # Full coverage, most demos
+    tasks: ["pick_place", "stack"]
+    description: "Primary tasks with full 24-subtype coverage"
+  tier_2:  # Core coverage
+    tasks: ["coffee", "threading"]
+    description: "Tasks with unique recovery behaviors (insertion, threading)"
+  tier_3:  # Minimal demos, transfer from tier 1/2
+    tasks: ["stack_three", "three_piece_assembly"]
+    description: "Multi-stage tasks, recovery transfers from tier 1/2"
+
+# ─── Collection targeting ───
+collection:
+  mode: "per_scene"  # "per_scene" = one counted demo per error scene; "quota" = legacy subtype quota
+
+# Legacy per-task demo allocations (used only when collection.mode=quota)
+demo_allocations:
+  pick_place:
+    grasp_misalignment_D0: 8
+    grasp_misalignment_D1: 7
+    grasp_wrong_pose_D0: 1
+    grasp_wrong_pose_D1: 2
+    drop_in_transit_D0: 8
+    drop_in_transit_D1: 4
+    drop_at_wrong_place_D0: 8
+    drop_at_wrong_place_D1: 4
+    collision_holding_D0: 6
+    collision_holding_D1: 5
+    collision_empty_D0: 4
+    collision_empty_D1: 4
+    collision_eef_object_D0: 3
+    collision_eef_object_D1: 4
+    collision_self_D0: 3
+    collision_self_D1: 2
+    wrong_object_D0: 5
+    wrong_object_D1: 2
+    position_error_D0: 6
+    position_error_D1: 5
+    trajectory_regression_D0: 4
+    trajectory_regression_D1: 2
+    stuck_no_progress_D0: 4
+
+  stack:
+    grasp_misalignment_D0: 5
+    grasp_misalignment_D1: 5
+    grasp_wrong_pose_D0: 1
+    grasp_wrong_pose_D1: 2
+    drop_in_transit_D0: 5
+    drop_in_transit_D1: 3
+    drop_at_wrong_place_D0: 6
+    drop_at_wrong_place_D1: 4
+    collision_holding_D0: 4
+    collision_holding_D1: 4
+    collision_empty_D0: 3
+    collision_empty_D1: 2
+    collision_eef_object_D0: 2
+    collision_eef_object_D1: 2
+    collision_self_D0: 2
+    collision_self_D1: 1
+    wrong_object_D0: 3
+    wrong_object_D1: 2
+    position_error_D0: 4
+    position_error_D1: 4
+    trajectory_regression_D0: 3
+    trajectory_regression_D1: 1
+    stuck_no_progress_D0: 3
+
+  coffee:
+    grasp_misalignment_D0: 3
+    grasp_misalignment_D1: 4
+    grasp_wrong_pose_D0: 1
+    grasp_wrong_pose_D1: 1
+    drop_in_transit_D0: 4
+    drop_in_transit_D1: 2
+    drop_at_wrong_place_D0: 4
+    drop_at_wrong_place_D1: 2
+    collision_holding_D0: 2
+    collision_holding_D1: 2
+    collision_empty_D0: 2
+    collision_empty_D1: 2
+    collision_eef_object_D0: 2
+    collision_eef_object_D1: 2
+    collision_self_D0: 1
+    collision_self_D1: 1
+    # wrong_object not applicable (single object)
+    position_error_D0: 4
+    position_error_D1: 4
+    trajectory_regression_D0: 2
+    trajectory_regression_D1: 1
+    stuck_no_progress_D0: 2
+
+  threading:
+    grasp_misalignment_D0: 4
+    grasp_misalignment_D1: 4
+    grasp_wrong_pose_D0: 1
+    grasp_wrong_pose_D1: 2
+    drop_in_transit_D0: 3
+    drop_in_transit_D1: 2
+    drop_at_wrong_place_D0: 5
+    drop_at_wrong_place_D1: 4
+    collision_holding_D0: 2
+    collision_holding_D1: 2
+    collision_empty_D0: 2
+    collision_empty_D1: 2
+    collision_eef_object_D0: 2
+    collision_eef_object_D1: 2
+    collision_self_D0: 1
+    collision_self_D1: 1
+    position_error_D0: 5
+    position_error_D1: 6
+    trajectory_regression_D0: 2
+    trajectory_regression_D1: 1
+    stuck_no_progress_D0: 3
+
+  stack_three:
+    grasp_misalignment_D0: 1
+    grasp_misalignment_D1: 2
+    grasp_wrong_pose_D0: 1
+    grasp_wrong_pose_D1: 1
+    drop_in_transit_D0: 1
+    drop_in_transit_D1: 1
+    drop_at_wrong_place_D0: 1
+    drop_at_wrong_place_D1: 2
+    collision_holding_D0: 1
+    collision_holding_D1: 2
+    collision_empty_D0: 1
+    collision_empty_D1: 2
+    collision_eef_object_D0: 1
+    collision_eef_object_D1: 2
+    collision_self_D0: 1
+    collision_self_D1: 1
+    wrong_object_D0: 3
+    wrong_object_D1: 1
+    position_error_D0: 2
+    position_error_D1: 2
+    trajectory_regression_D0: 1
+    trajectory_regression_D1: 1
+    stuck_no_progress_D0: 2
+
+  three_piece_assembly:
+    grasp_misalignment_D0: 2
+    grasp_misalignment_D1: 2
+    grasp_wrong_pose_D0: 1
+    grasp_wrong_pose_D1: 1
+    drop_in_transit_D0: 1
+    drop_in_transit_D1: 1
+    drop_at_wrong_place_D0: 2
+    drop_at_wrong_place_D1: 2
+    collision_holding_D0: 1
+    collision_holding_D1: 2
+    collision_empty_D0: 1
+    collision_empty_D1: 2
+    collision_eef_object_D0: 1
+    collision_eef_object_D1: 2
+    collision_self_D0: 1
+    collision_self_D1: 1
+    wrong_object_D0: 1
+    wrong_object_D1: 1
+    position_error_D0: 2
+    position_error_D1: 2
+    trajectory_regression_D0: 1
+    trajectory_regression_D1: 1
+    stuck_no_progress_D0: 2
+
+# ─── Teleoperation settings ───
+teleoperation:
+  device: "spacemouse"  # "spacemouse" | "keyboard"
+  max_episode_steps: 1000
+  control_freq: 20
+  camera_name: "agentview"
+  camera_resolution: 256
+  # SpaceMouse sensitivity (1.0 = robosuite default)
+  pos_sensitivity: 1.0
+  rot_sensitivity: 1.0
+  success_hold_frames: 10  # Consecutive frames satisfying check_success() for stable success
+  max_retries_per_scene: 3  # Max consecutive failures per scene before auto-switching
+
+# ─── Injection replay animation ───
+# Before teleop, replay the injection animation so the operator
+# sees how the error happened (normal execution → injection ��� error state)
+replay_animation:
+  enabled: true             # Show injection animation before teleop
+  speed: 1.0                # Playback speed multiplier (1.0 = real-time at 20Hz)
+  context_frames: 50        # Max context frames before injection (normal execution)
+  pause_after: 1.5          # Seconds to pause after injection (let operator see error)
+
+# ─── Segmentation thresholds ───
+segmentation:
+  retract:
+    min_eef_displacement: 0.05   # meters - EEF must move >5cm
+  re_acquire:
+    gripper_closed_threshold: 0.05
+    post_grasp_buffer: 15        # frames after grasp signal (MimicGen uses random 10-20)
+  release:
+    gripper_open_threshold: 0.02
+  navigate_to_object:
+    eef_to_obj_threshold: 0.06   # meters - EEF close to object
+  correct_position:
+    pos_error_threshold: 0.03
+
+# ─── Post-collection validation ───
+post_collection_validation:
+  enabled: true
+  quota_rule: replay_only
+  keep_rejected_successes: true
+  check_action_replay: true
+  check_scene_augmentation: false
+  max_target_scenes: 10  # number of same-scene variant attempts for augmentability check
+  early_stop_on_success: true
+  report_filename: "human_demo_test_report.json"
+
+# ─── Augmentation settings ───
+augmentation:
+  generator_mode: faithful_mimicgen
+
+  recovery_task_spec:
+    execution:
+      transform_first_robot_pose: false
+      interpolate_from_last_target_pose: true
+
+    defaults:
+      selection_strategy_with_object: nearest_neighbor_object
+      selection_strategy_kwargs_with_object:
+        nn_k: 3
+      selection_strategy_without_object: random
+      selection_strategy_kwargs_without_object: null
+      num_interpolation_steps: 30
+      num_fixed_steps: 0
+      apply_noise_during_interpolation: false
+      action_noise: 0.05
+
+    expected_sequences_by_rbg:
+      # MimicGen-style 2-subtask structure: pre_grasp + post_grasp
+      # Matches the original MimicGen `grasp` subtask_term_signal
+      RBG_A: [pre_grasp, post_grasp]
+      RBG_B: [pre_grasp, post_grasp]
+      RBG_C: [pre_grasp, post_grasp]
+      RBG_D: [pre_grasp, post_grasp]
+      RBG_E: [pre_grasp, post_grasp]
+
+    expected_sequences_by_subtype: {}
+
+    subtasks:
+      pre_grasp:
+        object_ref_strategy: target_object
+      post_grasp:
+        object_ref_strategy: placement_ref
+
+  # Scene configuration augmentation (same-scene variant mode)
+  # Each source demo generates variants of its OWN error scene by randomising
+  # non-anchored object placements — analogous to MimicGen's env.reset().
+  scene_augmentation:
+    enabled: true
+    mode: source_scene_variant
+    target_per_subtype: 100       # Target augmented demos per subtype
+    max_augment_ratio: 100        # Max variants generated per source demo
+    max_scene_cycles: 3           # Max attempts = target * max_scene_cycles
+    max_variant_attempts_per_scene: 8
+    min_variant_object_delta: 0.0001
+    allow_passthrough_on_no_variant: true  # Keep exact error state if all task objects are anchored
+    position_noise_std: 0.005     # Gaussian noise added to object poses
+    success_validation: true      # Simulate and verify success
+
+  # Fallback for subtypes where object-centric waypoint warping is not viable.
+  # Still starts from the recorded error state and requires check_success().
+  source_replay_fallback:
+    enabled: true
+    action_noise: 0.0
+
+  # Cross-degree augmentation
+  cross_degree:
+    enabled: false
+    # D0 -> D1: add translation + rotation perturbation
+    d0_to_d1:
+      offset_range: [0.02, 0.05]
+      rotation_range: [0.15, 0.5]
+
+  # Cross-subtype augmentation (within same RBG)
+  # Disabled for strict per-error quotas: outputs must start from the same
+  # error subtype they are counted under.
+  cross_subtype:
+    enabled: false
+
+  # Random seed for reproducibility
+  seed: 42
+
+# ─── Phoenix training data conversion ───
+phoenix_conversion:
+  mcm:
+    image_resolution: 224
+    camera_names: ["agentview"]
+  diffusion:
+    action_chunk_length: 12
+    image_resolution: 224
+    control_freq: 5               # Hz (downsample from 20Hz)
+    camera_names: ["agentview"]
+
+# ─── Output paths ───
+paths:
+  recovery_demos_dir: "error_benchmark/outputs/recovery/demos"
+  segmented_demos_dir: "error_benchmark/outputs/recovery/segmented"
+  augmented_demos_dir: "error_benchmark/outputs/recovery/augmented"
+  phoenix_mcm_dir: "error_benchmark/outputs/recovery/phoenix_mcm"
+  phoenix_diffusion_dir: "error_benchmark/outputs/recovery/phoenix_diffusion"

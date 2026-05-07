@@ -1,0 +1,40 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  brief:
+    format: '[%(levelname)s] %(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: brief
+    stream: ext://sys.stdout
+  file:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: standard
+    filename: error_benchmark/outputs/pick_place/logs/generator.log
+    mode: a
+
+loggers:
+  error_benchmark.framework:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: false
+  error_benchmark.framework.rollout_generator:
+    level: INFO
+  error_benchmark.framework.filters:
+    level: DEBUG
+  error_benchmark.framework.collector:
+    level: INFO
+  error_benchmark.framework.replay:
+    level: WARNING
+
+root:
+  level: WARNING
+  handlers: [console]

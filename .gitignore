@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Pytest
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude / Codex
+.claude/
+.codex
+
+# Runtime outputs
+error_benchmark/outputs/
+data/
+shared/checkpoints/
+
+# Garbage files from shell redirects
+19
+2026.log
+20:02:19
+Apr
+UTC
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Examples (users should download full data)
+examples/seed_demos/*.hdf5
+examples/error_scenes_sample/*.npz
+examples/error_scenes_sample/*.json
+examples/recovery_demo_sample/*.npz
+
+# Vendored workspace archive (not part of release)
+shared/mimicgen_workspace/archive/
