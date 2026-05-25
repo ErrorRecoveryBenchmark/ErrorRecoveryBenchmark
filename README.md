@@ -2,6 +2,8 @@
 
 A robotics benchmark for collecting and augmenting **human recovery demonstrations** in MuJoCo-simulated manipulation tasks. A human operator teleoperates a Sawyer robot arm using a SpaceMouse, recovering from injected error states (e.g., dropped objects, misaligned grasps, collisions) and completing the original task.
 
+## [Supplimentary Files](https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark/blob/main/Supplimentary_files.pdf)
+
 ## Overview
 
 The benchmark pipeline has three stages:
