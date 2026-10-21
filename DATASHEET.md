@@ -2,7 +2,7 @@
 
 A datasheet for datasets ([Gebru et al., 2021](https://arxiv.org/abs/1803.09010)) for the RecoverBench dataset and benchmark.
 
-> Robot manipulation benchmarks evaluate policies exclusively from clean initial states. In deployment, errors are not the exception — they are the steady state after the first slip, collision, or misgrasp. Existing benchmarks therefore systematically overestimate manipulation capability: they measure performance on a thin slice of the state distribution policies actually face. RecoverBench corrects this by re-grounding evaluation in *post-failure states*. Across 6 manipulation tasks, the best task-specific fine-tuned VLA we evaluate (Pi0.5) achieves a competitive clean-state success rate but recovers from only **3.7%** of injected error scenarios — and **0%** on `coffee`. The gap, not the headline number, is the contribution.
+> RecoverBench measures recovery from injected post-failure simulator states, alongside clean-start task success. Published results depend on the exact policy checkpoint, data version, evaluation scenes, and success criterion; see `EVALUATION.md`.
 
 ---
 
@@ -12,36 +12,42 @@ A datasheet for datasets ([Gebru et al., 2021](https://arxiv.org/abs/1803.09010)
 RecoverBench was created to enable systematic evaluation of robot manipulation policies under post-failure execution states — a regime existing benchmarks (LIBERO, RLBench, CALVIN, robosuite, MimicGen, DROID, BEDLAM) do not measure. Existing benchmarks score policies from clean initial states only, producing capability estimates that do not generalize to deployment, where execution errors (slips, collisions, misgrasps) are routine. Recent ad-hoc recovery work (SC-VLA, CycleVLA, FLARE, RoboFAC, FailSafe) has begun to study this regime, but each uses its own 2–4 error types, success criteria, and simulator setups, making cross-paper comparison impossible. RecoverBench provides the missing standardization layer: a 12-skill / 24-subtype error taxonomy, deterministically reproducible error scenes, a from-error-state evaluation protocol paired with the standard from-clean protocol, and a recovery training corpus.
 
 **Who created the dataset and on behalf of which entity?**
-The dataset was created by the RecoverBench authors for academic research and open release. Author identities and institutional affiliations are anonymized for the NeurIPS 2026 D&B double-blind review period and will be disclosed in the camera-ready version.
+Created by Zijia Tang, Ganlong Zhao, Xingping Chen, Junye Chen, Zihao Mo, Zedi Wang, Guanbin Li. See `CITATION.cff` for the affiliations in the author-provided camera-ready source. Project: https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark.
 
 **Who funded the creation of the dataset?**
-Funding sources and grant numbers are anonymized for the NeurIPS 2026 D&B double-blind review period. Both will be disclosed in the camera-ready version of this datasheet.
+The author-provided camera-ready acknowledgement credits the National Natural Science Foundation of China (62322608), Shenzhen Loop Area Institute (FPF10120260001), and computational resources from National Supercomputer Center in Guangzhou. The authors declare no competing interests; all-coauthor agreement was confirmed by the submitting author on October 21, 2026.
 
 ---
 
 ## 2. Composition
 
 **What do the instances represent?**
-Three instance types:
-- **Error scenes** (11,004 total): a `(sim_state, post_sim_state, RNG seed, environment fingerprint)` tuple representing a deterministically reproducible failure state.
-- **Human recovery demonstrations** (973 total): full `(states, actions, recovery_subtypes)` trajectories of a human teleoperator recovering from an error scene to task completion.
-- **MimicGen-augmented recovery demonstrations** (8,957 total): synthetically generated recovery trajectories produced by warping human demonstrations onto new error scenes via MimicGen scene-configuration warping.
+Three core instance types. The camera-ready corpus additionally includes 668 generated trajectories in `recovery_mimicgen_generated.tar`, giving 10,598 historical entries. `recovery_training_success_from_error.tar` contains the separate 739 trajectories used by the reported recovery-training runs and is not added to that corpus count. Counts below describe archive entries, not a claim that every file passes replay. Two legacy human NPZ files had truncated camera streams. Release v1.1.0 preserves all 17 complete CRC-verified NPY payloads per file, including actions and states. Their original camera streams are omitted; a separate image supplement supplies 880 state-rendered companion frames with explicit alignment and provenance. These images are derivative observations, not recovered original pixels. The corpus remains 10,598 trajectories. Historical archives remain available in dataset version history.
+
+
+- **Error scenes**: a `(post_sim_state, RNG state, environment fingerprint)` snapshot representing a deterministically reproducible failure state (each scene = one NPZ + one JSON sidecar).
+- **Human recovery demonstrations** (973 archive entries): `(states, actions)` recordings of human recovery attempts; stored success flags do not certify successful replay.
+- **MimicGen-augmented recovery demonstrations** (8,957 total): synthetically generated recovery trajectories produced by warping human demonstrations onto new error scenes via 2,532 scene-warping trajectories and 6,425 recorded-action replay trajectories, as detailed in the camera-ready appendix.
 
 **How many instances are there in total, and how is the dataset structured?**
 
-Top-level partitioning (see [`release_data/README.md`](../release_data/README.md) for full inventory):
+The core consists of three archives (see the [dataset card on HuggingFace](https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark) and `SHA256SUMS`):
 
-| Partition | Count | Purpose |
+| Archive | Contents | Purpose |
 |---|---|---|
-| `error_scenes/` | 11,004 NPZ + JSON pairs | Evaluation pool |
-| `recovery_demos_human/` | 973 NPZ files | Training pool (human) |
-| `recovery_demos_augmented/` | 8,957 NPZ files | Training pool (augmented) |
-| `mimicgen_prepared/` | 7 HDF5 files | Source data for MimicGen pipeline |
-| `seed_demos/` | 6 HDF5 files | Clean-trajectory seeds |
+| `eval_data.tar` | 1,360 error scenes (136 task × subtype combinations × 10; 2,720 files) | **Evaluation set** (frozen) |
+| `training_scenes.tar` | 5,038 error scenes | **Training scene pool** — disjoint from the evaluation set (verified: zero shared scene IDs, zero identical post-error state fingerprints); recovery demos were collected on scenes from this pool |
+| `training_data.tar` | `recovery_demos_human/` 973 NPZ + `recovery_demos_augmented/` 8,957 NPZ | Recovery-demonstration training data |
 
-Per-task error-scene counts: coffee 200 · pick_place 2,310 · stack 2,310 · stack_three 240 · threading 199 · three_piece_assembly 240.
+Clean-trajectory seed demos are downloaded from MimicGen's public HuggingFace
+repository by `scripts/download_data.sh` (not redistributed here).
 
-Error subtypes: 12 Error Skills × 2 difficulty degrees (D0: mild displacement < 10–15 cm; D1: severe displacement ≥ 10–15 cm with rotation) = 24 subtypes, organized into 5 Recovery Behavior Groups (RBGs A/B/C/D/E). See `release_code/README.md` for the taxonomy table.
+Per-task scene counts — evaluation set: coffee 200 · pick_place 240 · stack 240 ·
+stack_three 240 · threading 200 · three_piece_assembly 240; training pool:
+coffee 200 · pick_place 2,080 · stack 2,079 · stack_three 240 · threading 199 ·
+three_piece_assembly 240.
+
+Error subtypes: 12 Error Skills × 2 difficulty degrees (D0: mild displacement < 10–15 cm; D1: severe displacement ≥ 10–15 cm with rotation) = 24 subtypes, organized into 5 Recovery Behavior Groups (RBGs A/B/C/D/E). See [`README.md`](README.md) for the taxonomy table.
 
 **Modalities per instance:**
 - RGB: 224×224 agentview camera images (and other camera views available via robosuite config)
@@ -51,20 +57,20 @@ Error subtypes: 12 Error Skills × 2 difficulty degrees (D0: mild displacement <
 - Language: per-RBG instruction templates (e.g., RBG_E: "correct the position error and resume the task")
 
 **Does the dataset contain all possible instances or is it a sample?**
-Sample. The error-skill × task × difficulty grid covers 24 subtypes × 6 tasks = 144 cells, of which 138 are valid (some skill–task combinations are physically inapplicable). Each valid cell is sampled multiple times (per-task counts above).
+Sample. The error-skill × task × difficulty grid covers 24 subtypes × 6 tasks = 144 cells. The frozen evaluation release covers 136 cells (1,360 scenes). This observed coverage is distinct from the number of theoretically applicable cells; per-task counts are listed above.
 
 **What data does each instance consist of?**
-Error scenes: NPZ with `sim_state` (pre-injection) and `post_sim_state` (post-injection stable state); JSON with metadata (error skill, degree, injection frame, source dataset reference, RNG seed, environment fingerprint). Recovery demos: NPZ with `states`, `actions` (7-DOF: 6 joint + 1 gripper), `recovery_subtypes` (RBG-segmented subtask labels).
+Error scenes: NPZ with `sim_state` (pre-injection) and `post_sim_state` (post-injection stable state); JSON with metadata (error skill, degree, injection frame, source dataset reference, RNG seed, environment fingerprint). Recovery demos: NPZ with `states`, `actions` (6 OSC pose components + 1 gripper command), `recovery_subtypes` (RBG-segmented subtask labels).
 
 **Are there labels?**
 Yes. Error scenes are labeled with error skill name, degree, RBG, task, and source clean trajectory. Recovery demos are labeled with `recovery_subtypes` per timestep, identifying the active recovery sub-skill (e.g., `re_grasp`, `re_orient`).
 
 **Are there recommended data splits?**
-Yes — see "Standard Splits" in [`release_data/README.md`](../release_data/README.md): the full `error_scenes/` directory is the evaluation pool; `recovery_demos_human/` and `recovery_demos_augmented/` are training pools (used either independently or jointly, with disclosure).
+Yes — the split is physical: `eval_data.tar` is the frozen 1,360-scene evaluation set; `training_scenes.tar` (scene pool) and `training_data.tar` (`recovery_demos_human/`, `recovery_demos_augmented/`) are the training side. Train/eval disjointness is verified at the level of scene IDs and SHA-256 fingerprints of the canonical post-error simulator state.
 
 **Are there errors, sources of noise, or redundancies?**
 - Augmentation success rates vary widely by subtype (~9.6% mean on stack, with some subtypes at 0%); failed augmentations are filtered out before inclusion. Successful augmentations may still contain near-duplicate trajectories from the same human demo source.
-- Human teleoperation demonstrations contain operator variability; they are validated by action-replay (reload error state, replay recorded actions, confirm task success) before inclusion.
+- Human teleoperation demonstrations contain operator variability. Recorded success and replay flags describe the collection pipeline; the current archive audit is structural and does not certify successful replay of every released demonstration.
 
 **Does the dataset rely on external resources?**
 Yes. The data was generated using vendored forks of:
@@ -72,7 +78,7 @@ Yes. The data was generated using vendored forks of:
 - `mimicgen`
 - `robosuite-task-zoo`
 
-These are bundled in `release_code/shared/mimicgen_workspace/` so the dataset can be regenerated/replayed without external dependency drift. See `release_code/ROBOSUITE_VERSION_LOCK.txt` for version pinning.
+These are bundled in `shared/mimicgen_workspace/` so the dataset can be regenerated/replayed without external dependency drift. See `ROBOSUITE_VERSION_LOCK.txt` for version pinning.
 
 **Does the dataset contain sensitive, personal, or confidential information?**
 No. All data is simulated (MuJoCo); there are no human subjects, no personal data, no images of identifiable individuals. The human teleoperator's identity is not recorded in any instance.
@@ -86,7 +92,7 @@ Three pipelines:
 
 1. **Error scene generation (v5 Error-Skill + Context-Replay pipeline):** clean trajectories from `seed_demos/` are loaded; for each (task, error skill, degree) cell, the pipeline replays the clean trajectory up to a target injection frame, applies the error skill's `inject()` method (parameterized by degree), simulates to a stable state, and stores `(sim_state, post_sim_state, RNG, fingerprint)`. Fully automated and deterministic.
 
-2. **Human recovery demonstration collection:** an operator teleoperates a Sawyer arm in robosuite via SpaceMouse from each error scene's `post_sim_state`, attempting to recover and complete the original task. Demonstrations are recorded only if (a) the environment's `_check_success()` returns true for 10 consecutive frames, AND (b) action-replay validation passes (reloading the initial error state and replaying recorded actions reproduces task success).
+2. **Human recovery demonstration collection:** operators use a SpaceMouse with Sawyer (`pick_place`) or Panda (other tasks) after an injected error. Collection and replay-validation code are provided, but historical files must not be assumed to pass all checks in the current code. The paper distinguishes stored simulator-state restoration from action-replay reproducibility.
 
 3. **MimicGen scene-configuration augmentation:** human demonstrations are RBG-segmented, then re-targeted onto new error scenes within the same subtype via MimicGen's scene-configuration warping. Augmentation feasibility is verified on a sample of N=10 candidate scenes per subtype before bulk generation; only successful augmentations are retained.
 
@@ -97,21 +103,17 @@ The RecoverBench authors. The human teleoperator(s) are members of the author te
 2026-Q1 through 2026-Q2 (data version 1.0.0, dated 2026-05).
 
 **Were any ethical review processes conducted?**
-The dataset is **simulation-only** (MuJoCo 2.3.2 with the Sawyer arm in robosuite). It contains no human-subjects data, no personally identifiable information, no real-world imagery, no third-party copyrighted content, and no health, demographic, or behavioral data about identifiable individuals. The teleoperator(s) are authors of the project and consented to release of the recorded trajectories; no operator identity is recorded in any released instance. Under common research-ethics frameworks (e.g., U.S. Common Rule §46.102) this work does not constitute human-subjects research, and IRB / ethics-board review was therefore not required. We have nonetheless audited all released trajectories to confirm no incidental personal data is embedded in metadata or filenames.
+The dataset is **simulation-only** (MuJoCo 2.3.2 with Sawyer and Panda arms in robosuite). It contains no human-subjects data, no personally identifiable information, no real-world imagery, no third-party copyrighted content, and no health, demographic, or behavioral data about identifiable individuals. The teleoperator(s) are authors of the project and consented to release of the recorded trajectories; no operator identity is recorded in any released instance. Under common research-ethics frameworks (e.g., U.S. Common Rule §46.102) this work does not constitute human-subjects research, and IRB / ethics-board review was therefore not required. We have nonetheless audited all released trajectories to confirm no incidental personal data is embedded in metadata or filenames.
 
 ---
 
 ## 4. Preprocessing / Cleaning / Labeling
 
 **Was any preprocessing/cleaning/labeling done?**
-Yes:
-- **Success-hold validation:** every recorded human recovery demo must show `_check_success() == true` for 10 consecutive frames; episodes that flash success and fail are discarded.
-- **Action-replay validation:** every recorded demo is replayed from the initial error state; demos whose replay does not reproduce task success are discarded.
-- **RBG segmentation:** each demo is segmented into MimicGen-compatible subtask sequences using the RBG's recovery primitive ordering (e.g., RBG_A: `retract → re_orient → re_grasp → re_lift → re_transport → re_place`).
-- **Augmentation preflight:** before bulk MimicGen augmentation of a subtype, feasibility is tested on N=10 target error scenes; subtypes that fail preflight are not augmented.
+The released augmentation corpus uses two-subtask segmentation at gripper close (plus a 15-frame buffer); RBG-aware segmentation is an optional mode. Augmentations were checked for success at generation time. The current audit checks archive readability, action/state dimensions and finite values; it does not certify successful action replay of every record. The shipped augmented stack example fails replay under the pinned stack, as recorded in `examples/recovery_demo_sample/replay_validation.json`.
 
 **Was the raw data saved?**
-Raw teleoperation streams are retained internally but not part of the public release; the public release contains only validated, post-segmentation NPZ files.
+The historical NPZ archive is preserved. Two truncated human NPZ containers were recovered using only complete CRC-verified members. Original camera streams remain unavailable; the image supplement is clearly labeled as state-rendered derivative data. No numerical states were fabricated.
 
 ---
 
@@ -139,31 +141,31 @@ The dataset is not suitable for training general-purpose policies on its own (it
 ## 6. Distribution
 
 **Will the dataset be distributed to third parties?**
-Yes. Public open release alongside the NeurIPS 2026 D&B submission.
+Yes. Public open release alongside the NeurIPS 2026 Evaluations and Datasets camera-ready release.
 
 **How will it be distributed?**
-Zenodo (DOI to be assigned) and HuggingFace Hub, mirrored. The code release lives in the `release_code/` repository.
+HuggingFace Hub ([ErrorRecovery/ErrorRecoveryBenchmark](https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark)). The code release lives in this repository.
 
 **Under what license?**
-MIT License. Vendored dependencies in `release_code/shared/mimicgen_workspace/` retain their original licenses (robosuite, mimicgen, robosuite-task-zoo all under MIT or compatible licenses).
+MIT License. Vendored dependencies in `shared/mimicgen_workspace/` retain their original licenses (robosuite, MimicGen, and robosuite-task-zoo have their own license files; MimicGen uses the NVIDIA Source Code License).
 
 **Are there any restrictions or terms of use?**
-No restrictions beyond the MIT License. Researchers are *requested* (not required) to follow the gap-reporting protocol so leaderboard numbers remain comparable across papers.
+RecoverBench-original code and data use MIT; upstream and adapted components retain the terms in `THIRD_PARTY_NOTICES.md`. Researchers are *requested* (not required) to follow the gap-reporting protocol so leaderboard numbers remain comparable across papers.
 
 ---
 
 ## 7. Maintenance
 
 **Who is supporting / hosting / maintaining the dataset?**
-The RecoverBench authors. Author identities and a stable maintainer-contact email are anonymized for the NeurIPS 2026 D&B double-blind review period; both will be disclosed in the camera-ready version, and the canonical contact for issues, errata, and dataset updates will be published on the Zenodo and HuggingFace dataset pages alongside the GitHub issue tracker.
+The author team listed in `CITATION.cff` maintains the dataset. Use https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark/issues for issues and errata. Corresponding contact: Guanbin Li, liguanbin@mail.sysu.edu.cn; first-author contact: Zijia Tang, zt81@duke.edu.
 
 **How will errata or corrections be communicated?**
-Via the dataset's Zenodo and HuggingFace pages. The dataset is versioned (current: v1.0.0); breaking changes will be released as new major versions with full changelog.
+Via Hugging Face revision history and the GitHub issue tracker. Archive checksums identify exact versions. The camera-ready correction is being prepared; see docs/RELEASE.md and metadata/release_inventory.json.
 
 **Will the dataset be updated?**
 Yes. Planned future versions:
 - v1.1: additional baseline evaluations (more VLAs and imitation methods)
-- v2: real-robot extension (additional embodiment beyond simulated Sawyer)
+- v2: real-robot extension (additional embodiments beyond simulated Sawyer and Panda)
 - v2: additional task families and error skills based on community feedback
 
 **How can others contribute to the dataset?**

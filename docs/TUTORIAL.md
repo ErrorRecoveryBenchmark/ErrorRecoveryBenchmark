@@ -2,7 +2,7 @@
 
 ## Summary (English)
 
-This is the end-user tutorial for the RecoverBench data-collection and pipeline workflow. The shell commands work as written. Reviewers who only need the **evaluation protocol** should read [`../EVALUATION.md`](../EVALUATION.md); reviewers who only need the **dataset card** should read [`../DATASHEET.md`](../DATASHEET.md); reviewers tracing the **headline findings** should read [`../INSIGHTS.md`](../INSIGHTS.md).
+This is the end-user tutorial for the RecoverBench data-collection and pipeline workflow. The shell commands work as written. Reviewers who only need the **evaluation protocol** should read [`../EVALUATION.md`](../EVALUATION.md); reviewers who only need the **dataset card** should read [`../DATASHEET.md`](../DATASHEET.md).
 
 The sections below cover, in order: (1) environment setup including SpaceMouse on Linux; (2) recovery demonstration collection via SpaceMouse teleoperation; (3) v5 error scene generation; (4) MimicGen augmentation of recovery demonstrations; and (5) data preparation for downstream training. Cross-references to file paths and command lines apply identically to all readers.
 
@@ -42,8 +42,9 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 ```bash
 conda activate recovery_collect
 
-# Collect a single subtype
-bash run_collection.sh stack grasp_misalignment_D0 8
+# Collect a single subtype (8 demos)
+python error_benchmark/scripts/collection/2_collect_recovery_demos.py \
+    --task stack --subtype grasp_misalignment_D0 --num_demos 8 --device spacemouse
 
 # Batch collection
 bash collect_all.sh --task stack        # Single task

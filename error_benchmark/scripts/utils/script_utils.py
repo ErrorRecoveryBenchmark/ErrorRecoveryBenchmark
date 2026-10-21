@@ -268,10 +268,16 @@ def load_task_registry(task_name: str) -> dict:
             f"Task '{task_name}' has no dataset_path in task_registry.yaml. "
             f"Each task must specify its own dataset_path."
         )
-    # Resolve relative dataset_path to absolute
+    # Preserve explicit absolute paths; support the public downloader's layout.
     dp = info.get('dataset_path', '')
     if dp and not os.path.isabs(dp):
-        info['dataset_path'] = os.path.join(PROJECT_ROOT, dp)
+        data_root = os.environ.get('BENCHMARK_DATA')
+        if data_root:
+            info['dataset_path'] = os.path.abspath(os.path.join(data_root, 'seed_demos', f'{task_name}.hdf5'))
+        else:
+            configured = os.path.join(PROJECT_ROOT, dp)
+            downloaded = os.path.join(PROJECT_ROOT, 'data', 'seed_demos', f'{task_name}.hdf5')
+            info['dataset_path'] = configured if os.path.isfile(configured) else downloaded
     return info
 
 

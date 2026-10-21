@@ -1,0 +1,960 @@
+{
+  "@context": {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "rai": "http://mlcommons.org/croissant/RAI/",
+    "data": {
+      "@id": "cr:data",
+      "@type": "@json"
+    },
+    "dataType": {
+      "@id": "cr:dataType",
+      "@type": "@vocab"
+    },
+    "dct": "http://purl.org/dc/terms/",
+    "equivalentProperty": "cr:equivalentProperty",
+    "examples": {
+      "@id": "cr:examples",
+      "@type": "@json"
+    },
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "samplingRate": "cr:samplingRate",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform",
+    "prov": "http://www.w3.org/ns/prov#"
+  },
+  "@type": "sc:Dataset",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "name": "RecoverBench",
+  "description": "RecoverBench v1.1.0: 1,360 evaluation scenes; 5,038 training scenes; 10,598 corpus trajectories (973 human, 668 generated, 8,957 augmented); 739 separate HDF5 training trajectories. Two human records preserve all 17 complete CRC-verified NPY payloads but lack original camera streams. An image supplement provides 880 state-rendered derivative frames with explicit alignment and provenance. Numerical trajectories and counts are unchanged; structural validation does not certify action replay.",
+  "url": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark",
+  "license": "https://opensource.org/licenses/MIT",
+  "version": "1.1.0",
+  "keywords": [
+    "robotics",
+    "manipulation",
+    "error recovery",
+    "benchmark",
+    "imitation learning",
+    "MuJoCo",
+    "robosuite",
+    "teleoperation"
+  ],
+  "creator": [
+    {
+      "@type": "Person",
+      "name": "Zijia Tang",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Duke University"
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Ganlong Zhao",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "The Chinese University of Hong Kong"
+        },
+        {
+          "@type": "Organization",
+          "name": "Centre for Perceptual and Interactive Intelligence"
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Xingping Chen",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Sun Yat-sen University"
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Junye Chen",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Sun Yat-sen University"
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Zihao Mo",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Sun Yat-sen University"
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Zedi Wang",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Sun Yat-sen University"
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Guanbin Li",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Sun Yat-sen University"
+        },
+        {
+          "@type": "Organization",
+          "name": "Shenzhen Loop Area Institute"
+        },
+        {
+          "@type": "Organization",
+          "name": "Guangdong Key Laboratory of Big Data Analysis and Processing"
+        }
+      ]
+    }
+  ],
+  "distribution": [
+    {
+      "@type": "cr:FileObject",
+      "@id": "eval_data.tar",
+      "name": "eval_data.tar",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/eval_data.tar",
+      "encodingFormat": "application/x-tar",
+      "contentSize": "26173440 B",
+      "sha256": "0c2e732286d623a4f437b55996a78f3e3c0d6260d093c839d2524dd65d2182b0"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "training_scenes.tar",
+      "name": "training_scenes.tar",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/training_scenes.tar",
+      "encodingFormat": "application/x-tar",
+      "contentSize": "99297280 B",
+      "sha256": "ddac00ac207f02d6360fb8990ad9c22cc182c0d8b8e88f196859803c80b61740"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "training_data.tar",
+      "name": "training_data.tar",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/training_data.tar",
+      "encodingFormat": "application/x-tar",
+      "contentSize": "8856616960 B",
+      "sha256": "bdc5cece3d639b0ca2604b55079a079f33b5e10de3f3fb4c6bb298980d5955a5"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "recovery_mimicgen_generated.tar",
+      "name": "recovery_mimicgen_generated.tar",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/recovery_mimicgen_generated.tar",
+      "encodingFormat": "application/x-tar",
+      "contentSize": "126136320 B",
+      "sha256": "9f212d9b4c846578050a46d8cbb0e9c3cb9c880487a5b928c71ed58317fc6268"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "recovery_training_success_from_error.tar",
+      "name": "recovery_training_success_from_error.tar",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/recovery_training_success_from_error.tar",
+      "encodingFormat": "application/x-tar",
+      "contentSize": "561909760 B",
+      "sha256": "a7f8e9f062727d5607fd1d1d4fccd088932943683c34e0e7e3602805260882b8"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "eval_scenes-index",
+      "name": "eval_scenes.csv",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/eval_scenes.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "7e63bea4bbc179d460980adbb654f774a8463db2fbd17b6135e2baef416b316b"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "training_scenes-index",
+      "name": "training_scenes.csv",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/training_scenes.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "aac0dc8a3006f1169707f9caaa91f761c106093debd987cc4a1c651ae28dc869"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "recovery_demos-index",
+      "name": "recovery_demos.csv",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/recovery_demos.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "1186b95296f55ab252bad21cb38c15bf10b2b045a0f8b55e7b003db9634513db"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "mimicgen_generated-index",
+      "name": "mimicgen_generated.csv",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/mimicgen_generated.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "59ee2395ba39cf0cbc1f651ffbc9a07d6ab5c25c87b6235140e4436b757833a5"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "recovery_training-index",
+      "name": "recovery_training.csv",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/recovery_training.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "fd0abe64fb24b8e5d1559546d931fc7e861915fec521a0b9d4da16861d9bcf95"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "repair_manifest.json",
+      "name": "repair_manifest.json",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/repair_manifest.json",
+      "encodingFormat": "application/json",
+      "sha256": "0888ef29c4e6a1b57f71ba3b91478775a8f08102c482203397d54d92d89c75bd"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "eval_scene_ids.tsv",
+      "name": "eval_scene_ids.tsv",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/eval_scene_ids.tsv",
+      "encodingFormat": "text/plain",
+      "sha256": "58942027c1653d3826f83a3c2cd77c2fac4facd4c93a6906c81e2cfb9bc5fe4f"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "excluded_backfill_scene_ids.txt",
+      "name": "excluded_backfill_scene_ids.txt",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/excluded_backfill_scene_ids.txt",
+      "encodingFormat": "text/plain",
+      "sha256": "808e91ed8d8054973b3db80ef5320d14ccb8dbf70d33ef6c50e59cf404d56438"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "RecoverBench_image_supplement.zip",
+      "name": "RecoverBench_image_supplement.zip",
+      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/RecoverBench_image_supplement.zip",
+      "encodingFormat": "application/zip",
+      "contentSize": "59450560 B",
+      "sha256": "3c91eadd9993be6b16ebdad399a6224e464ce61357a4c39a54c18a4ab8973a00",
+      "description": "Companion images for two existing human records; derivative state renders, not additional trajectories or recovered original pixels. See IMAGE_SUPPLEMENT.md."
+    }
+  ],
+  "recordSet": [
+    {
+      "@type": "cr:RecordSet",
+      "@id": "eval_scenes",
+      "name": "eval_scenes",
+      "description": "Index of eval_data.tar:one row per NPZ or HDF5 demo group. Load arrays separately with NumPy/h5py. Empty fields mean absent metadata.",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/archive_member",
+          "name": "archive_member",
+          "description": "archive member",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "archive_member"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/task_name",
+          "name": "task_name",
+          "description": "task name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "task_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/scene_id",
+          "name": "scene_id",
+          "description": "scene id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "scene_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/error_name",
+          "name": "error_name",
+          "description": "error name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "error_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/degree",
+          "name": "degree",
+          "description": "degree",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "degree"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/demo_id",
+          "name": "demo_id",
+          "description": "demo id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "demo_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/num_steps",
+          "name": "num_steps",
+          "description": "num steps",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "num_steps"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/success",
+          "name": "success",
+          "description": "success",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "success"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "eval_scenes/read_error",
+          "name": "read_error",
+          "description": "read error",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "eval_scenes-index"
+            },
+            "extract": {
+              "column": "read_error"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "training_scenes",
+      "name": "training_scenes",
+      "description": "Index of training_scenes.tar:one row per NPZ or HDF5 demo group. Load arrays separately with NumPy/h5py. Empty fields mean absent metadata.",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/archive_member",
+          "name": "archive_member",
+          "description": "archive member",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "archive_member"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/task_name",
+          "name": "task_name",
+          "description": "task name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "task_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/scene_id",
+          "name": "scene_id",
+          "description": "scene id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "scene_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/error_name",
+          "name": "error_name",
+          "description": "error name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "error_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/degree",
+          "name": "degree",
+          "description": "degree",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "degree"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/demo_id",
+          "name": "demo_id",
+          "description": "demo id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "demo_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/num_steps",
+          "name": "num_steps",
+          "description": "num steps",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "num_steps"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/success",
+          "name": "success",
+          "description": "success",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "success"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "training_scenes/read_error",
+          "name": "read_error",
+          "description": "read error",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "training_scenes-index"
+            },
+            "extract": {
+              "column": "read_error"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "recovery_demos",
+      "name": "recovery_demos",
+      "description": "Index of training_data.tar:one row per NPZ or HDF5 demo group. Load arrays separately with NumPy/h5py. Empty fields mean absent metadata.",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/archive_member",
+          "name": "archive_member",
+          "description": "archive member",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "archive_member"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/task_name",
+          "name": "task_name",
+          "description": "task name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "task_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/scene_id",
+          "name": "scene_id",
+          "description": "scene id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "scene_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/error_name",
+          "name": "error_name",
+          "description": "error name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "error_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/degree",
+          "name": "degree",
+          "description": "degree",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "degree"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/demo_id",
+          "name": "demo_id",
+          "description": "demo id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "demo_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/num_steps",
+          "name": "num_steps",
+          "description": "num steps",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "num_steps"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/success",
+          "name": "success",
+          "description": "success",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "success"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_demos/read_error",
+          "name": "read_error",
+          "description": "read error",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_demos-index"
+            },
+            "extract": {
+              "column": "read_error"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "mimicgen_generated",
+      "name": "mimicgen_generated",
+      "description": "Index of recovery_mimicgen_generated.tar:one row per NPZ or HDF5 demo group. Load arrays separately with NumPy/h5py. Empty fields mean absent metadata.",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/archive_member",
+          "name": "archive_member",
+          "description": "archive member",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "archive_member"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/task_name",
+          "name": "task_name",
+          "description": "task name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "task_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/scene_id",
+          "name": "scene_id",
+          "description": "scene id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "scene_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/error_name",
+          "name": "error_name",
+          "description": "error name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "error_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/degree",
+          "name": "degree",
+          "description": "degree",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "degree"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/demo_id",
+          "name": "demo_id",
+          "description": "demo id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "demo_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/num_steps",
+          "name": "num_steps",
+          "description": "num steps",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "num_steps"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/success",
+          "name": "success",
+          "description": "success",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "success"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "mimicgen_generated/read_error",
+          "name": "read_error",
+          "description": "read error",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "mimicgen_generated-index"
+            },
+            "extract": {
+              "column": "read_error"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "recovery_training",
+      "name": "recovery_training",
+      "description": "Index of recovery_training_success_from_error.tar:one row per NPZ or HDF5 demo group. Load arrays separately with NumPy/h5py. Empty fields mean absent metadata.",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_training/archive_member",
+          "name": "archive_member",
+          "description": "archive member",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_training-index"
+            },
+            "extract": {
+              "column": "archive_member"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_training/task_name",
+          "name": "task_name",
+          "description": "task name",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_training-index"
+            },
+            "extract": {
+              "column": "task_name"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_training/demo_id",
+          "name": "demo_id",
+          "description": "demo id",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_training-index"
+            },
+            "extract": {
+              "column": "demo_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_training/num_steps",
+          "name": "num_steps",
+          "description": "num steps",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_training-index"
+            },
+            "extract": {
+              "column": "num_steps"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "recovery_training/read_error",
+          "name": "read_error",
+          "description": "read error",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "recovery_training-index"
+            },
+            "extract": {
+              "column": "read_error"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "dateModified": "2026-10-21",
+  "isLiveDataset": false,
+  "rai:dataCollection": "All data is generated in MuJoCo physics simulation using the robosuite framework (version-locked: robosuite 1.4.1 @ c848ca84, mujoco 2.3.2). Error scenes are created by programmatic injection of 12 error types into clean manipulation trajectories, with per-scene environment fingerprints and RNG states for deterministic reproduction. Recovery demonstrations are collected via human teleoperation with a SpaceMouse 3D input device; augmented demonstrations are generated with MimicGen-style trajectory adaptation and validated by simulated replay. Human operators are members of the author team. The released observations depict simulated scenes.",
+  "rai:personalSensitiveInformation": "No human imagery, speech, demographic annotations, or operator identities are collected as dataset features. Historical scene sidecars include technical source paths from the collection environment.",
+  "rai:dataBiases": "The benchmark uses mixed robot embodiments (Sawyer for pick_place, Franka Panda for the other five tasks) in tabletop manipulation settings. Error injection parameters are hand-designed based on common failure modes observed in robotic manipulation. Human recovery demonstrations reflect the skill level and strategies of a small set of operators and do not cover every task-subtype combination uniformly. The 6 tasks are limited to tabletop pick-and-place style manipulation.",
+  "rai:dataLimitations": "Simulation-only tabletop tasks with Sawyer and Panda embodiments, six tasks and hand-designed errors. Coverage varies by task and subtype. Results do not establish real-world safety. Two repaired human records lack original camera streams; supplemental state-rendered images have different rendering settings and are not original observations. Recorded HDF5 model XML contains historical asset paths; normalize with edit_model_xml before replay. Structural validation does not certify action replay.",
+  "rai:dataUseCases": "Evaluation of recovery after injected manipulation errors paired with clean-start success, error-type analysis, and recovery-policy training. Construct: completion of the original simulated task after a controlled execution error. Not validated for real-robot deployment, safety certification, human fairness assessment, or naturally occurring error distributions.",
+  "rai:dataSocialImpact": "May improve transparency about robot failure recovery and support reproducibility. Misuse includes treating simulation success as evidence of safe deployment. Report clean and recovery scores together and disclose simulator, policy, and data limitations.",
+  "rai:hasSyntheticData": true,
+  "prov:wasDerivedFrom": [
+    {
+      "@id": "https://huggingface.co/datasets/amandlek/mimicgen_datasets"
+    }
+  ],
+  "prov:wasGeneratedBy": {
+    "@type": "prov:Activity",
+    "name": "RecoverBench simulation, teleoperation and augmentation pipeline",
+    "description": "Replay upstream clean demonstrations, inject parameterized error skills, snapshot simulator states, collect SpaceMouse recoveries, and augment trajectories with MimicGen. See DATASHEET.md for collection and validation procedures; archive members and hashes are recorded in metadata/release_inventory.json."
+  },
+  "citeAs": "Zijia Tang, Ganlong Zhao, Xingping Chen, Junye Chen, Zihao Mo, Zedi Wang, Guanbin Li. RecoverBench: A Systematic Benchmark for Error Recovery in Robotic Manipulation. NeurIPS 2026, Evaluations and Datasets Track (accepted).",
+  "funder": [
+    {
+      "@type": "Organization",
+      "name": "National Natural Science Foundation of China"
+    },
+    {
+      "@type": "Organization",
+      "name": "Shenzhen Loop Area Institute"
+    }
+  ],
+  "datePublished": "2026-10-21"
+}

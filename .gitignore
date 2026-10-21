@@ -40,11 +40,44 @@ Thumbs.db
 *.log
 logs/
 
-# Examples (users should download full data)
+# Examples ship WITH the repo (small runnable samples promised in the paper
+# rebuttal); only oversized seed HDF5s stay excluded.
 examples/seed_demos/*.hdf5
-examples/error_scenes_sample/*.npz
-examples/error_scenes_sample/*.json
-examples/recovery_demo_sample/*.npz
 
 # Vendored workspace archive (not part of release)
 shared/mimicgen_workspace/archive/
+
+# Workflow / internal tooling (runtime state, machine-local paths)
+workflow/
+.devcompanion/
+.tmp_diag/
+reviews/
+.agents/
+/outputs/
+
+# AI Dev Companion artifacts - withheld from this PUBLIC repo by default:
+# CLAUDE.md embeds machine-local absolute install paths; docs/ecl holds
+# AI-generated code analysis. Remove a line deliberately if you want it published.
+CLAUDE.md
+AGENTS.md
+.cursorrules
+docs/ecl/
+
+# Internal working documents - never publish
+docs/CAMERA_READY_TODO.md
+docs/CAMERA_READY_AUDIT_20261021.md
+docs/CLUSTER_LAYOUT.md
+docs/ARCHIVE_CONTENTS.md
+docs/NEURIPS_2026_*
+docs/CODE_VS_DOCS_DISCREPANCIES.md
+docs/INTENT_VS_CODE.md
+docs/PANORAMA_INTENT_VS_CODE.md
+docs/ACCEPTANCE_STANDARD_5Q.md
+docs/TEST_FIRST_PLAN.md
+docs/DATA_QUALIFICATION.md
+docs/aug_regrasp_warp_fix_2026-06-02.md
+docs/全景项目总结.md
+docs/项目全景总结.md
+
+# Tests for ignored internal workflow tools
+error_benchmark/tests/unit/test_prepare_qualified_data_prune.py

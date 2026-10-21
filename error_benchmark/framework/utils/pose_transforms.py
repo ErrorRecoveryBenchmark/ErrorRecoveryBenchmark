@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Licensed under the NVIDIA Source Code License; see THIRD_PARTY_NOTICES.md.
 """
 Pose transform utilities extracted from MimicGen pose_utils.py.
 

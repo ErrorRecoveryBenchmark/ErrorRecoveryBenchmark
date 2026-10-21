@@ -44,6 +44,12 @@ from error_benchmark.scripts.training.eval_pi05_error_scenes import (
     shutdown_vla_server,
     wait_for_server,
 )
+from error_benchmark.scripts.training.success_tracker import (
+    ConsecutiveSuccessTracker,
+    SUCCESS_CRITERION_NAME,
+    SUCCESS_STREAK_FRAMES,
+)
+from error_benchmark.scripts.training.eval_metrics import rbg_of
 
 
 logging.basicConfig(
@@ -308,6 +314,7 @@ def evaluate_one_scene(
     max_steps: int,
     worker_id: int,
     group_by: str,
+    success_streak_frames: int = SUCCESS_STREAK_FRAMES,
 ) -> dict:
     started_at = time.time()
     scene_id = json_path.stem
@@ -359,14 +366,17 @@ def evaluate_one_scene(
         already_success = bool(env_wrapper.check_success())
 
         policy.start_episode()
-        success = already_success
+        # Success requires 10 consecutive success frames (EVALUATION.md §1);
+        # already_success is a one-frame diagnostic, not a recovery by itself.
+        tracker = ConsecutiveSuccessTracker(n=success_streak_frames)
+        success = False
         steps_taken = 0
 
         for step in range(max_steps):
             policy_result = policy.predict_from_obs(obs)
             obs, _, _, _ = env_wrapper.step(policy_result.action)
             steps_taken = step + 1
-            if env_wrapper.check_success():
+            if tracker.update(bool(env_wrapper.check_success())):
                 success = True
                 break
 
@@ -408,6 +418,8 @@ def worker_main(
     gpu_id: int,
     max_steps: int,
     group_by: str,
+    success_streak_frames: int,
+    replan_interval: int,
     result_queue,
 ) -> None:
     configure_runtime_env(gpu_id)
@@ -440,7 +452,7 @@ def worker_main(
             host="127.0.0.1",
             port=port,
             task_prompt=TASK_PROMPTS[task_name],
-            replan_interval=5,
+            replan_interval=replan_interval,
             connection_timeout=300.0,
             seed=worker_id,
         )
@@ -454,6 +466,7 @@ def worker_main(
                 max_steps,
                 worker_id,
                 group_by,
+                success_streak_frames,
             )
             processed += 1
             result_queue.put({"type": "result", "result": result})
@@ -503,7 +516,16 @@ def aggregate_results(results: Iterable[dict]) -> dict:
             if result.get("success"):
                 bucket[name]["successes"] += 1
 
-    for bucket in (by_subtype, by_degree, by_error_name):
+    by_rbg: Dict[str, dict] = {}
+    for result in ordered:
+        rbg = rbg_of(result.get("subtype_id", "")) or "unknown"
+        if rbg not in by_rbg:
+            by_rbg[rbg] = {"total": 0, "successes": 0}
+        by_rbg[rbg]["total"] += 1
+        if result.get("success"):
+            by_rbg[rbg]["successes"] += 1
+
+    for bucket in (by_subtype, by_degree, by_error_name, by_rbg):
         for value in bucket.values():
             value["sr"] = value["successes"] / value["total"] if value["total"] else 0.0
 
@@ -514,6 +536,7 @@ def aggregate_results(results: Iterable[dict]) -> dict:
         "by_subtype": by_subtype,
         "by_degree": by_degree,
         "by_error_name": by_error_name,
+        "by_rbg": by_rbg,
         "per_scene": ordered,
     }
 
@@ -684,6 +707,8 @@ def run_workers(
     resume: bool,
     worker_mode: str,
     group_by: str,
+    success_streak_frames: int,
+    replan_interval: int,
 ) -> dict:
     partial_path.parent.mkdir(parents=True, exist_ok=True)
     results_by_scene = load_partial_results(partial_path, group_by=group_by) if resume else {}
@@ -729,7 +754,18 @@ def run_workers(
             name = f"{task_name}-{safe_group}-{shard.worker_id}"
         proc = ctx.Process(
             target=worker_main,
-            args=(shard.worker_id, task_name, shard.paths, port, gpu_id, max_steps, group_by, result_queue),
+            args=(
+                shard.worker_id,
+                task_name,
+                shard.paths,
+                port,
+                gpu_id,
+                max_steps,
+                group_by,
+                success_streak_frames,
+                replan_interval,
+                result_queue,
+            ),
             name=name,
         )
         proc.start()
@@ -839,11 +875,13 @@ def parse_args():
     parser.add_argument("--task", type=str, required=True, choices=ALL_TASKS)
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--port", type=int, default=None)
-    parser.add_argument("--max_steps", type=int, default=1000)
+    parser.add_argument("--max_steps", type=int, default=500)
     parser.add_argument("--num_workers", type=int, default=16)
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--scenes_dir", type=str, required=True)
     parser.add_argument("--checkpoint", type=str, default=None)
+    parser.add_argument("--eval_manifest", type=str, default=None,
+                        help="Path to eval_set_manifest.json; restrict scenes to the sampled set")
     parser.add_argument("--limit_scenes", type=int, default=None)
     parser.add_argument(
         "--limit_per_group",
@@ -859,6 +897,24 @@ def parse_args():
     parser.add_argument("--batch_timeout_ms", type=int, default=20)
     parser.add_argument("--inference_timeout", type=float, default=600.0)
     parser.add_argument("--server_timeout", type=int, default=None)
+    parser.add_argument(
+        "--success-streak-frames",
+        type=int,
+        choices=(1, SUCCESS_STREAK_FRAMES),
+        default=SUCCESS_STREAK_FRAMES,
+        help="1 reproduces the paper Pi0.5 sweep; 10 uses the current protocol.",
+    )
+    parser.add_argument(
+        "--external_server",
+        action="store_true",
+        help="Use an already-running compatible TCP policy server.",
+    )
+    parser.add_argument(
+        "--replan-interval",
+        type=int,
+        default=5,
+        help="Number of actions consumed from each predicted action chunk.",
+    )
     return parser.parse_args()
 
 
@@ -868,6 +924,8 @@ def main() -> None:
         raise ValueError("--num_workers must be >= 1")
     if args.limit_per_group is not None and args.limit_per_group < 0:
         raise ValueError("--limit_per_group must be >= 0")
+    if args.replan_interval < 1:
+        raise ValueError("--replan-interval must be >= 1")
 
     task_name = args.task
     gpu_id = args.gpu
@@ -882,6 +940,16 @@ def main() -> None:
         raise FileNotFoundError(f"Scenes directory not found: {scenes_dir}")
 
     all_scene_jsons = sorted(scenes_dir.glob("*.json"))
+    if args.eval_manifest:
+        with open(args.eval_manifest) as f:
+            _manifest = json.load(f)
+        eval_manifest_ids = {
+            s["scene_id"] for s in _manifest.get("scenes", [])
+            if s.get("task") == task_name
+        }
+        all_scene_jsons = [p for p in all_scene_jsons if p.stem in eval_manifest_ids]
+        logger.info(f"Eval manifest {args.eval_manifest}: restricted to "
+                    f"{len(all_scene_jsons)} scenes for task {task_name}")
     scene_jsons = limit_scene_paths_per_group(
         all_scene_jsons,
         group_by=args.group_by,
@@ -925,31 +993,35 @@ def main() -> None:
     logger.info("Checkpoint: %s", checkpoint_path)
     logger.info("Partial results: %s (resume=%s)", partial_path, resume)
 
-    ensure_port_free(port)
+    if not args.external_server:
+        ensure_port_free(port)
 
     server_proc = None
     try:
-        server_proc, server_log_path = start_batched_vla_server(
-            task_name=task_name,
-            checkpoint_path=checkpoint_path,
-            port=port,
-            gpu_id=gpu_id,
-            num_workers=server_worker_count,
-            max_batch_size=max_batch_size,
-            batch_timeout_ms=args.batch_timeout_ms,
-            inference_timeout=args.inference_timeout,
-            log_dir=output_dir / "logs",
-        )
-
         server_timeout = args.server_timeout or int(os.environ.get("VLA_SERVER_TIMEOUT", "1200"))
-        logger.info("Waiting for batched VLA server for up to %ss...", server_timeout)
+        if args.external_server:
+            logger.info("Waiting for external VLA server for up to %ss...", server_timeout)
+        else:
+            server_proc, server_log_path = start_batched_vla_server(
+                task_name=task_name,
+                checkpoint_path=checkpoint_path,
+                port=port,
+                gpu_id=gpu_id,
+                num_workers=server_worker_count,
+                max_batch_size=max_batch_size,
+                batch_timeout_ms=args.batch_timeout_ms,
+                inference_timeout=args.inference_timeout,
+                log_dir=output_dir / "logs",
+            )
+            logger.info("Waiting for batched VLA server for up to %ss...", server_timeout)
         if not wait_for_server(port, timeout=server_timeout):
-            try:
-                log_tail = server_log_path.read_text()[-4000:]
-                logger.error("Server log tail:\n%s", log_tail)
-            except Exception:
-                pass
-            raise RuntimeError("Batched VLA server failed to start")
+            if server_proc is not None:
+                try:
+                    log_tail = server_log_path.read_text()[-4000:]
+                    logger.error("Server log tail:\n%s", log_tail)
+                except Exception:
+                    pass
+            raise RuntimeError("VLA server failed to start")
         logger.info("Batched VLA server ready.")
 
         error_results = run_workers(
@@ -963,6 +1035,8 @@ def main() -> None:
             resume=resume,
             worker_mode=args.worker_mode,
             group_by=args.group_by,
+            success_streak_frames=args.success_streak_frames,
+            replan_interval=args.replan_interval,
         )
 
         combined_results = {
@@ -971,6 +1045,12 @@ def main() -> None:
             "checkpoint_step": int(checkpoint_step) if checkpoint_step.isdigit() else checkpoint_step,
             "timestamp": datetime.now().isoformat(),
             "max_steps": args.max_steps,
+            "success_criterion": (
+                "single_frame"
+                if args.success_streak_frames == 1
+                else SUCCESS_CRITERION_NAME
+            ),
+            "success_streak_frames": args.success_streak_frames,
             "gpu": gpu_id,
             "port": port,
             "num_workers": args.num_workers,

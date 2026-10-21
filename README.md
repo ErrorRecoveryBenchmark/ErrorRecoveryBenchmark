@@ -1,8 +1,6 @@
 # Error Recovery Benchmark
 
-A robotics benchmark for collecting and augmenting **human recovery demonstrations** in MuJoCo-simulated manipulation tasks. A human operator teleoperates a Sawyer robot arm using a SpaceMouse, recovering from injected error states (e.g., dropped objects, misaligned grasps, collisions) and completing the original task.
-
-## [Supplimentary Files](https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark/blob/main/Supplimentary_files.pdf)
+A robotics benchmark for collecting and augmenting **human recovery demonstrations** in MuJoCo-simulated manipulation tasks. A human operator teleoperates a robot arm (Sawyer for pick_place, Panda for the other five tasks) using a SpaceMouse, recovering from injected error states (e.g., dropped objects, misaligned grasps, collisions) and completing the original task.
 
 ## Overview
 
@@ -40,13 +38,10 @@ The benchmark pipeline has three stages:
 ### Environment Setup
 
 ```bash
-# Option 1: Automated setup (Linux, creates conda env + installs all deps)
-bash setup_env.sh
-
-# Option 2: Manual setup
+# Repository installation (Python 3.10 recommended)
 conda create -n error_recovery python=3.10 -y
 conda activate error_recovery
-pip install -e .
+pip install -e ".[dev]"
 
 # Install MuJoCo
 pip install mujoco==2.3.2
@@ -56,7 +51,26 @@ git submodule update --init --recursive
 pip install -e shared/mimicgen_workspace/robosuite
 pip install -e shared/mimicgen_workspace/mimicgen
 pip install -e shared/mimicgen_workspace/robosuite-task-zoo
+# Optional: MimicGen data generation / augmentation (paper version)
+pip install -e ".[augmentation]"
 ```
+
+On Windows/macOS, configure the pinned simulator's local display support after installation:
+
+```bash
+python scripts/configure_local_sim.py
+```
+
+This adds a local `macros_private.py` and, on Windows, copies the installed
+MuJoCo 2.3.2 DLL to the location expected by the pinned robosuite. Existing private
+settings are preserved. Use `MUJOCO_GL=glfw` for local display runs.
+
+The restored `3c_generate_from_error_scene.py` is the historical Linux/EGL batch
+generator; it requires prepared MimicGen sources and training scenes. The
+clean-start evaluator additionally requires `openpi-client` and `tyro` in the
+policy-evaluation environment. These full policy runs require trained checkpoints.
+Historical dependency patches are provided under `patches/`; review and run
+`git apply --check` in the corresponding pinned submodule before applying them.
 
 ### Set Environment Variables
 
@@ -67,13 +81,24 @@ export PYTHONPATH="$(pwd):$(pwd)/shared/mimicgen_workspace/robosuite:$(pwd)/shar
 
 ### Download Data
 
-The full dataset (~30 GB) includes error scenes, human recovery demos, and MimicGen-augmented demos.
+The v1.1.0 camera-ready release contains five data archives (approximately 9.7 GB) and a 59 MB image supplement. The corpus has 10,598 trajectories: 973 human, 668 generated and 8,957 augmented. A separate 739-trajectory HDF5 artifact supports the reported recovery-policy experiments. Two repaired human records retain all complete numerical payloads; their missing camera streams are documented, with separately aligned state-rendered companion images. Upstream seeds are separate. See [the release guide](docs/RELEASE.md) for provenance and validation.
 
 ```bash
-bash scripts/download_data.sh
+python scripts/download_data.py data
+# Optional: also fetch upstream seed demos for scene generation
+# python scripts/download_data.py data --seeds
 ```
 
-See [examples/](examples/) for small sample data that lets you test the pipeline without the full dataset.
+See [examples/](examples/) for small samples and a CPU-only format check:
+
+```bash
+python scripts/inspect_examples.py
+```
+
+`setup_env.sh` is only for exported portable collection packages, not this repository.
+The download script does not need the Hugging Face CLI. Pass `--archives eval_data.tar`
+to fetch only the evaluation set. Select seed HDF5 paths in
+`error_benchmark/configs/task_registry.yaml` when regenerating scenes.
 
 ## Usage
 
@@ -195,12 +220,12 @@ Each error scene contains:
 
 ### Recovery Demos (`*.npz`)
 
-Each recovery demonstration contains:
+The human NPZ format contains the following fields. Historical augmented files may contain only actions, states, eef_positions, and gripper_states; optional fields must not be assumed to exist. See [DATA_FORMAT.md](docs/DATA_FORMAT.md).
 - `actions`: robot action sequence (T, action_dim)
-- `states`: full MuJoCo state sequence (T, state_dim)
-- `camera_images`: RGB observations (T, H, W, 3)
-- `eef_positions`: end-effector positions (T, 3)
-- `eef_orientations`: end-effector orientations (T, 4)
+- `states`: full MuJoCo state sequence (T+1, state_dim) for the human NPZ format
+- `camera_images`: optional RGB observations; frame count and resolution vary by recording
+- `eef_positions`: end-effector positions (T+1, 3)
+- `eef_orientations`: optional end-effector orientations (T+1, 4)
 - `gripper_states`: gripper state (T, gripper_dim)
 - `target_poses`: MimicGen-compatible waypoints
 - `task_name`, `error_name`, `degree`, `scene_id`, `demo_id`: metadata
@@ -218,10 +243,17 @@ pytest error_benchmark/tests/unit/ -v
 
 ## Citation
 
-<!-- TODO: Add citation when paper is published -->
+Zijia Tang, Ganlong Zhao, Xingping Chen, Junye Chen, Zihao Mo, Zedi Wang, Guanbin Li. RecoverBench: A Systematic Benchmark for Error Recovery in Robotic Manipulation. NeurIPS 2026, Evaluations and Datasets Track (accepted). See [CITATION.cff](CITATION.cff).
+
+## Attribution and maintenance
+
+Developed by Zijia Tang, Ganlong Zhao, Xingping Chen, Junye Chen, Zihao Mo, Zedi Wang, Guanbin Li.
+Author affiliations are recorded in [CITATION.cff](CITATION.cff). Correspondence: Guanbin Li (liguanbin@mail.sysu.edu.cn); first-author contact: Zijia Tang (zt81@duke.edu). Code and dataset provenance is documented in
+[DATASHEET.md](DATASHEET.md) and [the dataset card](docs/HF_DATASET_CARD.md).
+Report reproducibility problems through the [issue tracker](https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark/issues).
 
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
-Vendored dependencies in `shared/mimicgen_workspace/` retain their original licenses.
+Vendored dependencies and adapted components retain their upstream terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

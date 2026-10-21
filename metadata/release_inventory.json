@@ -1,0 +1,99 @@
+{
+  "archives": [
+    {
+      "filename": "eval_data.tar",
+      "sha256": "0c2e732286d623a4f437b55996a78f3e3c0d6260d093c839d2524dd65d2182b0",
+      "size": 26173440,
+      "records": 1360,
+      "per_task": {
+        "stack": 240,
+        "stack_three": 240,
+        "pick_place": 240,
+        "three_piece_assembly": 240,
+        "coffee": 200,
+        "threading": 200
+      },
+      "task_subtype_cells": 136,
+      "invalid_records": []
+    },
+    {
+      "filename": "training_scenes.tar",
+      "sha256": "ddac00ac207f02d6360fb8990ad9c22cc182c0d8b8e88f196859803c80b61740",
+      "size": 99297280,
+      "records": 5038,
+      "per_task": {
+        "coffee": 200,
+        "three_piece_assembly": 240,
+        "threading": 199,
+        "stack": 2079,
+        "stack_three": 240,
+        "pick_place": 2080
+      },
+      "task_subtype_cells": 136,
+      "invalid_records": []
+    },
+    {
+      "filename": "training_data.tar",
+      "sha256": "bdc5cece3d639b0ca2604b55079a079f33b5e10de3f3fb4c6bb298980d5955a5",
+      "size": 8856616960,
+      "records": 9930,
+      "per_task": {
+        "three_piece_assembly": 2332,
+        "threading": 1958,
+        "stack_three": 2368,
+        "stack": 1178,
+        "pick_place": 102,
+        "coffee": 1992
+      },
+      "task_subtype_cells": 0,
+      "invalid_records": []
+    },
+    {
+      "filename": "recovery_mimicgen_generated.tar",
+      "sha256": "9f212d9b4c846578050a46d8cbb0e9c3cb9c880487a5b928c71ed58317fc6268",
+      "size": 126136320,
+      "records": 668,
+      "per_task": {
+        "coffee": 47,
+        "pick_place": 223,
+        "stack": 248,
+        "stack_three": 55,
+        "threading": 7,
+        "three_piece_assembly": 88
+      },
+      "task_subtype_cells": 0,
+      "invalid_records": []
+    },
+    {
+      "filename": "recovery_training_success_from_error.tar",
+      "sha256": "a7f8e9f062727d5607fd1d1d4fccd088932943683c34e0e7e3602805260882b8",
+      "size": 561909760,
+      "records": 739,
+      "per_task": {
+        "coffee": 85,
+        "pick_place": 168,
+        "stack": 175,
+        "stack_three": 111,
+        "threading": 32,
+        "three_piece_assembly": 168
+      },
+      "invalid_records": [],
+      "model_xml_with_original_asset_paths": 739,
+      "note": "Recorded model XML retains original asset paths; loaders must normalize paths to the installed pinned packages. No policy rollout reproduced by this structural check."
+    }
+  ],
+  "train_eval_shared_scene_ids": 0,
+  "train_eval_shared_state_fingerprints": 0,
+  "corpus_entries": 10598,
+  "separate_recovery_training_entries": 739,
+  "repaired_human_records": 2,
+  "repair_manifest": "repair_manifest.json",
+  "release_version": "1.1.0",
+  "image_supplement": {
+    "filename": "RecoverBench_image_supplement.zip",
+    "sha256": "3c91eadd9993be6b16ebdad399a6224e464ce61357a4c39a54c18a4ab8973a00",
+    "state_rendered_frames": 880,
+    "existing_trajectories": 2,
+    "new_trajectories": 0
+  }
+}

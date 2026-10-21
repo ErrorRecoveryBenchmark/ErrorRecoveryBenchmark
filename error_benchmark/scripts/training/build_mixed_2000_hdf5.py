@@ -9,7 +9,7 @@ Sampling policy:
     extra demos; takes 1000 from the original D0 + 1000 from D0-extra -> 2000 total.
     (Extra datasets are produced by parallel_mimicgen_generate.py with --seed_offset.)
 
-Output: /HOME/.../mimicgen_datasets/mixed_2000/{task}_mixed_2000.hdf5
+Output: /path/to/mimicgen_datasets/mixed_2000/{task}_mixed_2000.hdf5
 Seed is fixed (42) for reproducible sampling.
 
 Usage:

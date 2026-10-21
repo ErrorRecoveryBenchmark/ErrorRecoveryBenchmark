@@ -143,6 +143,8 @@ def main():
     parser.add_argument("--no-recovery-human", dest="include_recovery_human", action="store_false")
     parser.add_argument("--include-recovery-augmented", action="store_true", default=True)
     parser.add_argument("--no-recovery-augmented", dest="include_recovery_augmented", action="store_false")
+    parser.add_argument("--augmented-subdir", default="augmented",
+                        help="Subdir under outputs/recovery to read aug_*.npz from (e.g. augmented_v2)")
     parser.add_argument("--include-original", action="store_true", default=False,
                         help="Include original HDF5 demos (images already present)")
     parser.add_argument("--min-action-len", type=int, default=30,
@@ -191,7 +193,7 @@ def main():
                 npz_items.append((str(npz), "human"))
 
     if args.include_recovery_augmented:
-        aug_dir = recovery_root / "augmented" / args.task
+        aug_dir = recovery_root / args.augmented_subdir / args.task
         if aug_dir.exists():
             for npz in sorted(aug_dir.rglob("aug_*.npz")):
                 npz_items.append((str(npz), "augmented"))

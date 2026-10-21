@@ -54,6 +54,13 @@ PYTHONPATH_IMPORT_ROOTS = [
     str(PROJECT_DIR / "shared" / "mimicgen_workspace" / "mimicgen"),
 ]
 
+from error_benchmark.scripts.training.success_tracker import (
+    ConsecutiveSuccessTracker,
+    SUCCESS_CRITERION_NAME,
+    SUCCESS_STREAK_FRAMES,
+)
+from error_benchmark.scripts.training.eval_metrics import rbg_of
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -374,6 +381,50 @@ def evaluate_clean_rollouts_robomimic(checkpoint_path: Path, num_rollouts: int =
     }
 
 
+def evaluate_clean_rollouts(env, env_wrapper, policy, num_rollouts: int = 50,
+                            max_steps: int = 500) -> dict:
+    """Clean rollouts from the standard initial-state distribution, scored with the
+    same 10-consecutive-frame criterion as error-scene RSR (EVALUATION.md §1/§3).
+
+    This is the protocol-compliant CSR path: it replaces robomimic's
+    run_trained_agent so CSR and RSR share one identical success criterion.
+    """
+    logger.info(f"Running {num_rollouts} clean rollouts (unified 10-frame criterion)...")
+    results = []
+    successes = 0
+
+    for i in range(num_rollouts):
+        obs = env.reset()
+        policy.start_episode()
+        tracker = ConsecutiveSuccessTracker()
+        success = False
+        steps_taken = 0
+
+        for step in range(max_steps):
+            policy_result = policy.predict_from_obs(obs)
+            obs, reward, done, info = env_wrapper.step(policy_result.action)
+            steps_taken = step + 1
+            if tracker.update(bool(env_wrapper.check_success())):
+                success = True
+                break
+
+        if success:
+            successes += 1
+        results.append({"rollout_id": i, "success": success, "steps": steps_taken})
+        status = "OK" if success else "FAIL"
+        logger.info(f"  Clean [{i+1}/{num_rollouts}]: {status} in {steps_taken} steps")
+
+    sr = successes / num_rollouts if num_rollouts > 0 else 0.0
+    return {
+        "sr": sr,
+        "total": num_rollouts,
+        "successes": successes,
+        "success_criterion": SUCCESS_CRITERION_NAME,
+        "parse_method": "unified_envwrapper_loop",
+        "per_rollout": results,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════
 # Error scene evaluation
 # ═══════════════════════════════════════════════════════════════
@@ -381,13 +432,19 @@ def evaluate_clean_rollouts_robomimic(checkpoint_path: Path, num_rollouts: int =
 def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
                           task_name: str, max_steps: int = 500,
                           scenes_limit: int = 0,
-                          scenes_seed: int = 0) -> dict:
+                          scenes_seed: int = 0,
+                          eval_manifest_ids=None) -> dict:
     """Run policy on each error scene and measure recovery success.
 
-    If scenes_limit > 0, sample that many scenes evenly across subtypes
-    (deterministic w.r.t. scenes_seed) so each subtype gets ~equal coverage.
+    If eval_manifest_ids is provided (a set of scene_id stems), the run is
+    first restricted to that frozen sampled eval set. If scenes_limit > 0,
+    sample that many scenes evenly across subtypes (deterministic w.r.t.
+    scenes_seed) so each subtype gets ~equal coverage.
     """
     scene_jsons = sorted(scenes_dir.glob("*.json"))
+    if eval_manifest_ids is not None:
+        scene_jsons = [p for p in scene_jsons if p.stem in eval_manifest_ids]
+        logger.info(f"Restricted to {len(scene_jsons)} scenes from eval manifest")
     logger.info(f"Found {len(scene_jsons)} error scenes in {scenes_dir}")
 
     if scenes_limit and scenes_limit < len(scene_jsons):
@@ -466,14 +523,17 @@ def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
 
             already_success = env_wrapper.check_success()
             policy.start_episode()
-            success = already_success
+            # Success requires 10 consecutive success frames (EVALUATION.md §1);
+            # already_success is a one-frame diagnostic only.
+            tracker = ConsecutiveSuccessTracker()
+            success = False
             steps_taken = 0
 
             for step in range(max_steps):
                 policy_result = policy.predict_from_obs(obs)
                 obs, reward, done, info = env_wrapper.step(policy_result.action)
                 steps_taken = step + 1
-                if env_wrapper.check_success():
+                if tracker.update(bool(env_wrapper.check_success())):
                     success = True
                     break
 
@@ -513,11 +573,23 @@ def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
     for v in by_subtype.values():
         v["sr"] = v["successes"] / v["total"] if v["total"] > 0 else 0.0
 
+    by_rbg = {}
+    for r in results:
+        rbg = rbg_of(r["subtype_id"]) or "unknown"
+        if rbg not in by_rbg:
+            by_rbg[rbg] = {"total": 0, "successes": 0}
+        by_rbg[rbg]["total"] += 1
+        if r["success"]:
+            by_rbg[rbg]["successes"] += 1
+    for v in by_rbg.values():
+        v["sr"] = v["successes"] / v["total"] if v["total"] > 0 else 0.0
+
     return {
         "overall_sr": overall_sr,
         "total": total,
         "successes": successes,
         "by_subtype": by_subtype,
+        "by_rbg": by_rbg,
         "per_scene": results,
     }
 
@@ -535,6 +607,11 @@ def main():
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--skip_clean", action="store_true")
     parser.add_argument("--skip_error", action="store_true")
+    parser.add_argument(
+        "--clean_method", choices=["unified", "robomimic"], default="unified",
+        help="CSR via the unified 10-frame EnvWrapper loop (protocol, default) "
+             "or the legacy robomimic run_trained_agent (different criterion).",
+    )
     parser.add_argument("--scenes_dir", type=str, default=None,
                         help="Override the per-task scenes directory")
     parser.add_argument("--scenes_root", type=str,
@@ -544,6 +621,8 @@ def main():
                         help="Sample N scenes evenly across subtypes (0=use all)")
     parser.add_argument("--scenes_seed", type=int, default=0)
     parser.add_argument("--checkpoint", type=str, default=None)
+    parser.add_argument("--eval_manifest", type=str, default=None,
+                        help="Path to eval_set_manifest.json; restrict error scenes to the sampled set")
     args = parser.parse_args()
 
     task_key = args.task
@@ -588,6 +667,9 @@ def main():
         "checkpoint_epoch": checkpoint_epoch,
         "timestamp": datetime.now().isoformat(),
         "max_steps": args.max_steps,
+        "success_criterion": SUCCESS_CRITERION_NAME,
+        "success_streak_frames": SUCCESS_STREAK_FRAMES,
+        "clean_method": args.clean_method,
         "gpu": gpu_id,
         "scenes_limit": args.scenes_limit,
         "scenes_seed": args.scenes_seed,
@@ -604,22 +686,13 @@ def main():
                 f"Scene path is not a directory for task {task_key}: {scenes_dir}"
             )
 
-    # Clean rollout evaluation via robomimic
-    if not args.skip_clean:
-        logger.info(f"\n{'='*60}")
-        logger.info(f"Clean Rollout Evaluation (robomimic)")
-        logger.info(f"{'='*60}")
-        clean_results = evaluate_clean_rollouts_robomimic(
-            checkpoint_path, args.num_clean, horizon=args.max_steps
-        )
-        combined_results["clean_rollouts"] = clean_results
-
-    # Error scene evaluation
-    if not args.skip_error:
-        logger.info(f"\n{'='*60}")
-        logger.info(f"Error Scene Evaluation: {task_key}")
-        logger.info(f"{'='*60}")
-
+    # Build the robosuite env + BC-RNN policy once; the unified clean CSR loop and
+    # the error-scene RSR loop share them so both use the same success criterion.
+    need_env = (not args.skip_error) or (not args.skip_clean and args.clean_method == "unified")
+    env = None
+    env_wrapper = None
+    policy = None
+    if need_env:
         import yaml
         from error_benchmark.scripts.utils.script_utils import create_env, load_task_registry
         from error_benchmark.framework.env_wrapper import EnvWrapper
@@ -635,16 +708,58 @@ def main():
         env_wrapper = EnvWrapper(env, task_config)
         policy = RobomimicPolicyAdapter(ckpt_path=str(checkpoint_path), device="cuda:0")
 
-        error_results = evaluate_error_scenes(
-            env, env_wrapper, policy, scenes_dir, task_key,
-            max_steps=args.max_steps,
-            scenes_limit=args.scenes_limit,
-            scenes_seed=args.scenes_seed,
-        )
-        combined_results["error_scenes"] = error_results
-        logger.info(f"\nError Scene SR: {error_results['overall_sr']*100:.1f}% "
-                    f"({error_results['successes']}/{error_results['total']})")
-        env.close()
+    try:
+        # Clean rollout evaluation (CSR)
+        if not args.skip_clean:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Clean Rollout Evaluation ({args.clean_method})")
+            logger.info(f"{'='*60}")
+            if args.clean_method == "robomimic":
+                clean_results = evaluate_clean_rollouts_robomimic(
+                    checkpoint_path, args.num_clean, horizon=args.max_steps
+                )
+                # The legacy path uses robomimic's own success criterion, NOT the
+                # 10-consecutive-frame rule; record that inside the clean section so
+                # CSR is not mis-described by the top-level success_criterion field.
+                clean_results.setdefault("success_criterion", "robomimic_run_trained_agent")
+            else:
+                clean_results = evaluate_clean_rollouts(
+                    env, env_wrapper, policy,
+                    num_rollouts=args.num_clean, max_steps=args.max_steps,
+                )
+            combined_results["clean_rollouts"] = clean_results
+
+        # Error scene evaluation (RSR)
+        if not args.skip_error:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Error Scene Evaluation: {task_key}")
+            logger.info(f"{'='*60}")
+            eval_manifest_ids = None
+            if args.eval_manifest:
+                with open(args.eval_manifest) as f:
+                    _manifest = json.load(f)
+                eval_manifest_ids = {
+                    s["scene_id"] for s in _manifest.get("scenes", [])
+                    if s.get("task") == task_key
+                }
+                logger.info(f"Loaded eval manifest {args.eval_manifest}: "
+                            f"{len(eval_manifest_ids)} scenes for task {task_key}")
+            error_results = evaluate_error_scenes(
+                env, env_wrapper, policy, scenes_dir, task_key,
+                max_steps=args.max_steps,
+                scenes_limit=args.scenes_limit,
+                scenes_seed=args.scenes_seed,
+                eval_manifest_ids=eval_manifest_ids,
+            )
+            combined_results["error_scenes"] = error_results
+            logger.info(f"\nError Scene SR: {error_results['overall_sr']*100:.1f}% "
+                        f"({error_results['successes']}/{error_results['total']})")
+    finally:
+        if env is not None:
+            try:
+                env.close()
+            except Exception:
+                pass
 
     # Save results
     with open(result_path, 'w') as f:

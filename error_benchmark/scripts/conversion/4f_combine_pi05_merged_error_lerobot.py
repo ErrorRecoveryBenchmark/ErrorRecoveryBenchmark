@@ -353,6 +353,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--merged-repo-suffix", default="merged")
     parser.add_argument("--error-repo-suffix", default="error_training")
     parser.add_argument("--output-repo-suffix", default="merged_error_training")
+    parser.add_argument("--merged-repeat", type=int, default=1)
+    parser.add_argument("--error-repeat", type=int, default=1)
     parser.add_argument("--repo-id", default=None)
     parser.add_argument("--report-root", default=str(DEFAULT_REPORT_ROOT))
     parser.add_argument(
@@ -370,12 +372,18 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     hf_lerobot_home = Path(args.hf_lerobot_home).expanduser()
+    if args.merged_repeat < 1 or args.error_repeat < 1:
+        raise ValueError("--merged-repeat and --error-repeat must both be >= 1")
+
     output_repo_id = args.repo_id or _repo_id(args.task, args.output_repo_suffix)
     output_root = _dataset_root(hf_lerobot_home, output_repo_id)
-    source_repo_ids = [
-        _repo_id(args.task, args.merged_repo_suffix),
-        _repo_id(args.task, args.error_repo_suffix),
-    ]
+    merged_repo_id = _repo_id(args.task, args.merged_repo_suffix)
+    error_repo_id = _repo_id(args.task, args.error_repo_suffix)
+    source_repo_ids = [merged_repo_id] * args.merged_repeat + [error_repo_id] * args.error_repeat
+    source_repeats = {
+        merged_repo_id: args.merged_repeat,
+        error_repo_id: args.error_repeat,
+    }
     report_path = Path(args.report_root) / f"{args.task}_validation_report.json"
 
     report: dict[str, Any] = {
@@ -384,6 +392,7 @@ def main() -> None:
         "repo_id": output_repo_id,
         "output_path": str(output_root),
         "source_repo_ids": source_repo_ids,
+        "source_repeats": source_repeats,
         "validate_only": bool(args.validate_only),
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }

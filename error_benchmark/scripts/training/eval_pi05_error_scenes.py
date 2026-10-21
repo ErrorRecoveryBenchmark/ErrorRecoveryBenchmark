@@ -61,6 +61,13 @@ sys.path.insert(0, str(PROJECT_DIR))
 sys.path.insert(0, str(PROJECT_DIR / "shared" / "mimicgen_workspace" / "robosuite"))
 sys.path.insert(0, str(PROJECT_DIR / "shared" / "mimicgen_workspace" / "mimicgen"))
 
+from error_benchmark.scripts.training.success_tracker import (
+    ConsecutiveSuccessTracker,
+    SUCCESS_CRITERION_NAME,
+    SUCCESS_STREAK_FRAMES,
+)
+from error_benchmark.scripts.training.eval_metrics import rbg_of
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -183,9 +190,17 @@ def shutdown_vla_server(port: int, proc: subprocess.Popen):
 # ═══════════════════════════════════════════════════════════════
 
 def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
-                          task_name: str, max_steps: int = 500) -> dict:
-    """Run policy on each error scene and measure recovery success."""
+                          task_name: str, max_steps: int = 500,
+                          eval_manifest_ids=None) -> dict:
+    """Run policy on each error scene and measure recovery success.
+
+    If eval_manifest_ids is provided (a set of scene_id stems), only those
+    scenes are evaluated — this restricts the run to a frozen sampled eval set.
+    """
     scene_jsons = sorted(scenes_dir.glob("*.json"))
+    if eval_manifest_ids is not None:
+        scene_jsons = [p for p in scene_jsons if p.stem in eval_manifest_ids]
+        logger.info(f"Restricted to {len(scene_jsons)} scenes from eval manifest")
     logger.info(f"Found {len(scene_jsons)} error scenes in {scenes_dir}")
 
     results = []
@@ -233,9 +248,12 @@ def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
             # Verify we're in an error state (optional sanity check)
             already_success = env_wrapper.check_success()
 
-            # Run policy
+            # Run policy. Success requires 10 consecutive success frames
+            # (EVALUATION.md §1); a single already-success frame is a diagnostic
+            # only and does not by itself count as a recovery.
             policy.start_episode()
-            success = already_success  # rare: some scenes might already be "solved"
+            tracker = ConsecutiveSuccessTracker()
+            success = False
             steps_taken = 0
 
             for step in range(max_steps):
@@ -243,7 +261,7 @@ def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
                 obs, reward, done, info = env_wrapper.step(policy_result.action)
                 steps_taken = step + 1
 
-                if env_wrapper.check_success():
+                if tracker.update(bool(env_wrapper.check_success())):
                     success = True
                     break
 
@@ -312,6 +330,18 @@ def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
     for v in by_error_name.values():
         v["sr"] = v["successes"] / v["total"] if v["total"] > 0 else 0.0
 
+    # By RBG (A-E recovery behavior group)
+    by_rbg = {}
+    for r in results:
+        rbg = rbg_of(r["subtype_id"]) or "unknown"
+        if rbg not in by_rbg:
+            by_rbg[rbg] = {"total": 0, "successes": 0}
+        by_rbg[rbg]["total"] += 1
+        if r["success"]:
+            by_rbg[rbg]["successes"] += 1
+    for v in by_rbg.values():
+        v["sr"] = v["successes"] / v["total"] if v["total"] > 0 else 0.0
+
     return {
         "overall_sr": overall_sr,
         "total": total,
@@ -319,6 +349,7 @@ def evaluate_error_scenes(env, env_wrapper, policy, scenes_dir: Path,
         "by_subtype": by_subtype,
         "by_degree": by_degree,
         "by_error_name": by_error_name,
+        "by_rbg": by_rbg,
         "per_scene": results,
     }
 
@@ -333,6 +364,7 @@ def evaluate_clean_rollouts(env, env_wrapper, policy, num_rollouts: int = 50,
     for i in range(num_rollouts):
         obs = env.reset()
         policy.start_episode()
+        tracker = ConsecutiveSuccessTracker()
         success = False
         steps_taken = 0
 
@@ -341,7 +373,7 @@ def evaluate_clean_rollouts(env, env_wrapper, policy, num_rollouts: int = 50,
             obs, reward, done, info = env_wrapper.step(policy_result.action)
             steps_taken = step + 1
 
-            if env_wrapper.check_success():
+            if tracker.update(bool(env_wrapper.check_success())):
                 success = True
                 break
 
@@ -374,14 +406,28 @@ def main():
     parser.add_argument("--task", type=str, required=True, choices=ALL_TASKS)
     parser.add_argument("--gpu", type=int, default=0, help="GPU index for VLA server")
     parser.add_argument("--port", type=int, default=None, help="VLA server port (default: 5560+gpu)")
-    parser.add_argument("--max_steps", type=int, default=1000, help="Max steps per rollout")
+    parser.add_argument("--max_steps", type=int, default=500, help="Max steps per rollout (EVALUATION.md §2)")
     parser.add_argument("--num_clean", type=int, default=50, help="Number of clean rollouts")
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--skip_clean", action="store_true")
     parser.add_argument("--skip_error", action="store_true")
     parser.add_argument("--scenes_dir", type=str, default=None, help="Override scenes directory")
     parser.add_argument("--checkpoint", type=str, default=None, help="Override checkpoint path")
+    parser.add_argument("--eval_manifest", type=str, default=None,
+                        help="Path to eval_set_manifest.json; restrict error scenes to the sampled set")
     args = parser.parse_args()
+
+    # Load the frozen sampled eval set (scene_ids for this task), if provided
+    eval_manifest_ids = None
+    if args.eval_manifest:
+        with open(args.eval_manifest) as f:
+            _manifest = json.load(f)
+        eval_manifest_ids = {
+            s["scene_id"] for s in _manifest.get("scenes", [])
+            if s.get("task") == args.task
+        }
+        logger.info(f"Loaded eval manifest {args.eval_manifest}: "
+                    f"{len(eval_manifest_ids)} scenes for task {args.task}")
 
     task_name = args.task
     gpu_id = args.gpu
@@ -471,6 +517,8 @@ def main():
             "checkpoint_step": int(checkpoint_step) if checkpoint_step.isdigit() else checkpoint_step,
             "timestamp": datetime.now().isoformat(),
             "max_steps": args.max_steps,
+            "success_criterion": SUCCESS_CRITERION_NAME,
+            "success_streak_frames": SUCCESS_STREAK_FRAMES,
             "gpu": gpu_id,
             "port": port,
         }
@@ -481,7 +529,8 @@ def main():
             logger.info(f"Error Scene Evaluation: {task_name}")
             logger.info(f"{'='*60}")
             error_results = evaluate_error_scenes(
-                env, env_wrapper, policy, scenes_dir, task_name, args.max_steps
+                env, env_wrapper, policy, scenes_dir, task_name, args.max_steps,
+                eval_manifest_ids=eval_manifest_ids,
             )
             combined_results["error_scenes"] = error_results
             logger.info(f"\nError Scene SR: {error_results['overall_sr']*100:.1f}% "

@@ -5,6 +5,7 @@ Unit tests for BC-RNN baseline evaluation helpers.
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 
 
@@ -98,7 +99,7 @@ Average Rollout Stats
 def test_robomimic_subprocess_env_includes_local_import_roots(monkeypatch):
     monkeypatch.setenv("PYTHONPATH", "/tmp/existing")
     env = eval_mod.build_robomimic_subprocess_env()
-    pythonpath = env["PYTHONPATH"].split(":")
+    pythonpath = env["PYTHONPATH"].split(os.pathsep)
 
     assert str(PROJECT_DIR) in pythonpath
     assert str(PROJECT_DIR / "shared" / "mimicgen_workspace" / "robosuite") in pythonpath
