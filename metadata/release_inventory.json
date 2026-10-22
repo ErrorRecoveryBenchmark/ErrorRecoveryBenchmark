@@ -34,8 +34,8 @@
     },
     {
       "filename": "training_data.tar",
-      "sha256": "bdc5cece3d639b0ca2604b55079a079f33b5e10de3f3fb4c6bb298980d5955a5",
-      "size": 8856616960,
+      "sha256": "0f85d555232a90d1a19fb7231453349a549c1532faaad953787ca94928eba590",
+      "size": 8908974080,
       "records": 9930,
       "per_task": {
         "three_piece_assembly": 2332,
@@ -88,12 +88,7 @@
   "separate_recovery_training_entries": 739,
   "repaired_human_records": 2,
   "repair_manifest": "repair_manifest.json",
-  "release_version": "1.1.0",
-  "image_supplement": {
-    "filename": "RecoverBench_image_supplement.zip",
-    "sha256": "3c91eadd9993be6b16ebdad399a6224e464ce61357a4c39a54c18a4ab8973a00",
-    "state_rendered_frames": 880,
-    "existing_trajectories": 2,
-    "new_trajectories": 0
-  }
+  "release_version": "1.1.1",
+  "integrated_camera_records": 2,
+  "integrated_camera_frames": 880
 }

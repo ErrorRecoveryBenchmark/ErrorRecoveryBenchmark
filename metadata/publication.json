@@ -1,31 +1,27 @@
 {
   "repo": "ErrorRecovery/ErrorRecoveryBenchmark",
-  "previous_revision": "a5fd98a30c79cae5bcd663d9468db059842c5df0",
-  "revision": "834bcc800d3b95ec194936fca59ed89c0df7456e",
-  "url": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/commit/834bcc800d3b95ec194936fca59ed89c0df7456e",
+  "previous_revision": "834bcc800d3b95ec194936fca59ed89c0df7456e",
+  "revision": "c4cf11acf5bd9e3c91a13e3b70251a2d1a540cb1",
+  "url": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/commit/c4cf11acf5bd9e3c91a13e3b70251a2d1a540cb1",
+  "version": "1.1.1",
   "files": [
     "CITATION.cff",
     "DATASHEET.md",
-    "IMAGE_SUPPLEMENT.md",
+    "DATA_FORMAT.md",
     "LICENSE",
     "README.md",
-    "RecoverBench_image_supplement.zip",
     "SHA256SUMS",
     "THIRD_PARTY_NOTICES.md",
     "croissant.json",
-    "eval_data.tar",
     "eval_scene_ids.tsv",
     "eval_scenes.csv",
     "excluded_backfill_scene_ids.txt",
     "mimicgen_generated.csv",
     "recovery_demos.csv",
-    "recovery_mimicgen_generated.tar",
     "recovery_training.csv",
-    "recovery_training_success_from_error.tar",
     "release_inventory.json",
     "repair_manifest.json",
     "training_data.tar",
-    "training_scenes.csv",
-    "training_scenes.tar"
+    "training_scenes.csv"
   ]
 }

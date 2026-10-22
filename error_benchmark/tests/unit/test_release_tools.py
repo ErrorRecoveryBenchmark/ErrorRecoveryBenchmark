@@ -135,3 +135,39 @@ def test_inventory_reports_unreadable_demo_instead_of_silently_dropping_it(tmp_p
     assert report["records"] == 1
     assert len(report["invalid_records"]) == 1
     assert "broken.npz" in (tmp_path / "index.csv").read_text()
+
+
+def test_image_integration_preserves_payloads_and_rejects_misalignment(tmp_path):
+    import hashlib
+    import json
+    import zipfile
+    import numpy as np
+    from scripts.integrate_recovery_images import integrate
+
+    source, images, report = (tmp_path / n for n in ("demo.npz", "images.npz", "render.json"))
+    states = np.array([[1.0, 3.0], [1.05, 4.0]])
+    np.savez_compressed(source, demo_id="demo", states=states, actions=np.ones((1, 7)))
+    def fixture(times):
+        np.savez_compressed(images, demo_id="demo", camera_images=np.zeros((2, 4, 4, 3), dtype=np.uint8),
+                            camera_state_indices=np.arange(2), state_times=times)
+        report.write_text(json.dumps({"source_npz_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                                     "image_npz_sha256": hashlib.sha256(images.read_bytes()).hexdigest(),
+                                     "demo_id": "demo", "resolution": 4}))
+    fixture(states[:, 0])
+    result = tmp_path / "result.npz"
+    integrate(source, images, report, result)
+    with zipfile.ZipFile(source) as old, zipfile.ZipFile(result) as new:
+        assert all(old.read(k) == new.read(k) for k in old.namelist())
+    with np.load(result, allow_pickle=False) as data:
+        assert data["camera_source"].item() == "state_rerender"
+        assert np.array_equal(data["camera_state_times"], states[:, 0])
+    fixture(states[::-1, 0])
+    rejected = tmp_path / "rejected.npz"
+    with pytest.raises(ValueError, match="timestamp mismatch"):
+        integrate(source, images, report, rejected)
+    assert not rejected.exists()
+    fixture(states[:, 0])
+    images.write_bytes(images.read_bytes() + b"changed")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        integrate(source, images, report, rejected)
+    assert not rejected.exists()

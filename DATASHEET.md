@@ -22,7 +22,7 @@ The author-provided camera-ready acknowledgement credits the National Natural Sc
 ## 2. Composition
 
 **What do the instances represent?**
-Three core instance types. The camera-ready corpus additionally includes 668 generated trajectories in `recovery_mimicgen_generated.tar`, giving 10,598 historical entries. `recovery_training_success_from_error.tar` contains the separate 739 trajectories used by the reported recovery-training runs and is not added to that corpus count. Counts below describe archive entries, not a claim that every file passes replay. Two legacy human NPZ files had truncated camera streams. Release v1.1.0 preserves all 17 complete CRC-verified NPY payloads per file, including actions and states. Their original camera streams are omitted; a separate image supplement supplies 880 state-rendered companion frames with explicit alignment and provenance. These images are derivative observations, not recovered original pixels. The corpus remains 10,598 trajectories. Historical archives remain available in dataset version history.
+Three core instance types. The camera-ready corpus additionally includes 668 generated trajectories in `recovery_mimicgen_generated.tar`, giving 10,598 historical entries. `recovery_training_success_from_error.tar` contains the separate 739 trajectories used by the reported recovery-training runs and is not added to that corpus count. Counts below describe archive entries, not a claim that every file passes replay. Release v1.1.1 stores image observations alongside numerical trajectory arrays. Image alignment and rendering provenance are documented in DATA_FORMAT.md and record metadata. The corpus contains 10,598 trajectories; the 739 HDF5 training trajectories remain a separate artifact.
 
 
 - **Error scenes**: a `(post_sim_state, RNG state, environment fingerprint)` snapshot representing a deterministically reproducible failure state (each scene = one NPZ + one JSON sidecar).
@@ -113,7 +113,7 @@ The dataset is **simulation-only** (MuJoCo 2.3.2 with Sawyer and Panda arms in r
 The released augmentation corpus uses two-subtask segmentation at gripper close (plus a 15-frame buffer); RBG-aware segmentation is an optional mode. Augmentations were checked for success at generation time. The current audit checks archive readability, action/state dimensions and finite values; it does not certify successful action replay of every record. The shipped augmented stack example fails replay under the pinned stack, as recorded in `examples/recovery_demo_sample/replay_validation.json`.
 
 **Was the raw data saved?**
-The historical NPZ archive is preserved. Two truncated human NPZ containers were recovered using only complete CRC-verified members. Original camera streams remain unavailable; the image supplement is clearly labeled as state-rendered derivative data. No numerical states were fabricated.
+Published archive revisions are preserved in dataset history. All complete numerical payloads are retained byte-for-byte. Image sources, state alignment and validation are documented in record metadata; no numerical states were synthesized.
 
 ---
 

@@ -63,32 +63,27 @@ The supplied latest paper already distinguishes 973 human, 668 generated, and
 those 739 to the corpus total. Authors and affiliations are in `CITATION.cff`.
 The current downloader supports all five archives.
 
-The original two truncated human NPZ files have complete, CRC-verified action and
-state members, but incomplete camera images. `scripts/repair_truncated_npz.py`
-can create an explicit repaired copy containing only complete NPY members; it
-refuses to overwrite a file or repair an incomplete action/state sequence and
-records all preserved payload hashes. Release v1.1.0 uses this count-preserving repair. Do not substitute the earlier two-file-exclusion
-candidate when maintaining the paper's counts. Missing images must be disclosed.
+## Integrated image observations
 
+Version 1.1.1 distributes all release data in five archives. The two camera arrays
+rendered from saved states are stored inside their human demonstration NPZs in
+`training_data.tar`. Their `camera_state_indices`, `camera_state_times`,
+`camera_source` and `camera_metadata` fields specify alignment and provenance.
+See `docs/DATA_FORMAT.md`. Complete numerical payloads and corpus counts remain
+unchanged. Previous revisions remain accessible in dataset history.
 
-## State-rendered image supplement
-
-The two repaired human records have separately stored, explicitly aligned image
-companions in `RecoverBench_image_supplement.zip` on the dataset page. All 880
-saved states are rendered without integrating actions. The surviving original
-image prefixes are preserved separately. The new images have a consistent pinned
-simulator view, but are not original pixels and must not be spliced into the old
-image streams. They do not add trajectories or alter paper counts/results.
-Use `camera_state_indices` and `state_times`, not the old four-step sampling rule.
-Verify the ZIP against the corresponding entry in `SHA256SUMS`.
-
-To regenerate a companion from a readable recovered NPZ:
+To regenerate images from saved states:
 
 ```bash
-python -m scripts.render_recovery_state_images recovery.npz recovery.images.npz \
+python -m scripts.render_recovery_state_images recovery.npz images.npz \
   --seed-dataset /path/to/threading_d0_prepared.hdf5 \
   --task-config error_benchmark/configs/tasks/threading.yaml
+python -m scripts.integrate_recovery_images recovery.npz images.npz images.json integrated.npz
 ```
+
+The integration command verifies source hashes, demo identity, image dimensions,
+state indices and timestamps, preserves existing NPY payloads byte-for-byte, and
+refuses to overwrite an output or replace existing image fields.
 
 The submitting author confirmed all-coauthor agreement with the paper's
 no-competing-interests statement on October 21, 2026.

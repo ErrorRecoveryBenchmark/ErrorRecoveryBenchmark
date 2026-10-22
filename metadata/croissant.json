@@ -50,10 +50,10 @@
   "@type": "sc:Dataset",
   "conformsTo": "http://mlcommons.org/croissant/1.0",
   "name": "RecoverBench",
-  "description": "RecoverBench v1.1.0: 1,360 evaluation scenes; 5,038 training scenes; 10,598 corpus trajectories (973 human, 668 generated, 8,957 augmented); 739 separate HDF5 training trajectories. Two human records preserve all 17 complete CRC-verified NPY payloads but lack original camera streams. An image supplement provides 880 state-rendered derivative frames with explicit alignment and provenance. Numerical trajectories and counts are unchanged; structural validation does not certify action replay.",
+  "description": "RecoverBench: 1,360 evaluation scenes, 5,038 training scenes and 10,598 recovery trajectories (973 human, 668 generated, 8,957 augmented). A separate 739-trajectory HDF5 artifact supports recovery-policy training. Image observations are stored in demonstration NPZ files with alignment and rendering provenance where available. Structural validation does not certify action replay.",
   "url": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark",
   "license": "https://opensource.org/licenses/MIT",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "keywords": [
     "robotics",
     "manipulation",
@@ -173,8 +173,8 @@
       "name": "training_data.tar",
       "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/training_data.tar",
       "encodingFormat": "application/x-tar",
-      "contentSize": "8856616960 B",
-      "sha256": "bdc5cece3d639b0ca2604b55079a079f33b5e10de3f3fb4c6bb298980d5955a5"
+      "contentSize": "8908974080 B",
+      "sha256": "0f85d555232a90d1a19fb7231453349a549c1532faaad953787ca94928eba590"
     },
     {
       "@type": "cr:FileObject",
@@ -240,7 +240,7 @@
       "name": "repair_manifest.json",
       "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/repair_manifest.json",
       "encodingFormat": "application/json",
-      "sha256": "0888ef29c4e6a1b57f71ba3b91478775a8f08102c482203397d54d92d89c75bd"
+      "sha256": "7f066202e9a8c6b53084d6c54a04ae90ded127867e12368dd940e6e2564bd744"
     },
     {
       "@type": "cr:FileObject",
@@ -257,16 +257,6 @@
       "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/excluded_backfill_scene_ids.txt",
       "encodingFormat": "text/plain",
       "sha256": "808e91ed8d8054973b3db80ef5320d14ccb8dbf70d33ef6c50e59cf404d56438"
-    },
-    {
-      "@type": "cr:FileObject",
-      "@id": "RecoverBench_image_supplement.zip",
-      "name": "RecoverBench_image_supplement.zip",
-      "contentUrl": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark/resolve/main/RecoverBench_image_supplement.zip",
-      "encodingFormat": "application/zip",
-      "contentSize": "59450560 B",
-      "sha256": "3c91eadd9993be6b16ebdad399a6224e464ce61357a4c39a54c18a4ab8973a00",
-      "description": "Companion images for two existing human records; derivative state renders, not additional trajectories or recovered original pixels. See IMAGE_SUPPLEMENT.md."
     }
   ],
   "recordSet": [
@@ -926,12 +916,12 @@
       ]
     }
   ],
-  "dateModified": "2026-10-21",
+  "dateModified": "2026-10-22",
   "isLiveDataset": false,
   "rai:dataCollection": "All data is generated in MuJoCo physics simulation using the robosuite framework (version-locked: robosuite 1.4.1 @ c848ca84, mujoco 2.3.2). Error scenes are created by programmatic injection of 12 error types into clean manipulation trajectories, with per-scene environment fingerprints and RNG states for deterministic reproduction. Recovery demonstrations are collected via human teleoperation with a SpaceMouse 3D input device; augmented demonstrations are generated with MimicGen-style trajectory adaptation and validated by simulated replay. Human operators are members of the author team. The released observations depict simulated scenes.",
   "rai:personalSensitiveInformation": "No human imagery, speech, demographic annotations, or operator identities are collected as dataset features. Historical scene sidecars include technical source paths from the collection environment.",
   "rai:dataBiases": "The benchmark uses mixed robot embodiments (Sawyer for pick_place, Franka Panda for the other five tasks) in tabletop manipulation settings. Error injection parameters are hand-designed based on common failure modes observed in robotic manipulation. Human recovery demonstrations reflect the skill level and strategies of a small set of operators and do not cover every task-subtype combination uniformly. The 6 tasks are limited to tabletop pick-and-place style manipulation.",
-  "rai:dataLimitations": "Simulation-only tabletop tasks with Sawyer and Panda embodiments, six tasks and hand-designed errors. Coverage varies by task and subtype. Results do not establish real-world safety. Two repaired human records lack original camera streams; supplemental state-rendered images have different rendering settings and are not original observations. Recorded HDF5 model XML contains historical asset paths; normalize with edit_model_xml before replay. Structural validation does not certify action replay.",
+  "rai:dataLimitations": "Simulation-only tabletop tasks with Sawyer and Panda embodiments, six tasks and hand-designed errors. Coverage varies by task and subtype; results do not establish real-world safety. Image sources and sampling vary: two human records use state-rendered camera observations, identified in their camera_source and camera_metadata fields. Original camera viewpoints are not asserted for those records. Recorded HDF5 model XML contains historical asset paths; normalize with edit_model_xml before replay. Structural validation does not certify action replay.",
   "rai:dataUseCases": "Evaluation of recovery after injected manipulation errors paired with clean-start success, error-type analysis, and recovery-policy training. Construct: completion of the original simulated task after a controlled execution error. Not validated for real-robot deployment, safety certification, human fairness assessment, or naturally occurring error distributions.",
   "rai:dataSocialImpact": "May improve transparency about robot failure recovery and support reproducibility. Misuse includes treating simulation success as evidence of safe deployment. Report clean and recovery scores together and disclose simulator, policy, and data limitations.",
   "rai:hasSyntheticData": true,

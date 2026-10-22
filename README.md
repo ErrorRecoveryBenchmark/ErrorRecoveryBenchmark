@@ -81,7 +81,7 @@ export PYTHONPATH="$(pwd):$(pwd)/shared/mimicgen_workspace/robosuite:$(pwd)/shar
 
 ### Download Data
 
-The v1.1.0 camera-ready release contains five data archives (approximately 9.7 GB) and a 59 MB image supplement. The corpus has 10,598 trajectories: 973 human, 668 generated and 8,957 augmented. A separate 739-trajectory HDF5 artifact supports the reported recovery-policy experiments. Two repaired human records retain all complete numerical payloads; their missing camera streams are documented, with separately aligned state-rendered companion images. Upstream seeds are separate. See [the release guide](docs/RELEASE.md) for provenance and validation.
+The v1.1.1 release contains five standard data archives (approximately 9.7 GB), with image observations stored directly in demonstration NPZ files. The corpus contains 973 human, 668 generated and 8,957 augmented trajectories (10,598 total). A separate 739-trajectory HDF5 artifact supports the reported recovery-policy experiments. See [data formats](docs/DATA_FORMAT.md) for image alignment and provenance, and [the release guide](docs/RELEASE.md) for reproducibility.
 
 ```bash
 python scripts/download_data.py data

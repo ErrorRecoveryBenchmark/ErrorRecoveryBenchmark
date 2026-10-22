@@ -1,7 +1,7 @@
 {
   "validator": "mlcroissant 1.1.1",
   "mode": "public URLs; no local mapping",
-  "revision": "834bcc800d3b95ec194936fca59ed89c0df7456e",
+  "revision": "c4cf11acf5bd9e3c91a13e3b70251a2d1a540cb1",
   "records": {
     "eval_scenes": 1360,
     "training_scenes": 5038,
