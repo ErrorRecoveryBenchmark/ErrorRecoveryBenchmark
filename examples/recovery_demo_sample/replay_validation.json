@@ -1,0 +1,46 @@
+{
+  "environment": {
+    "mujoco": "2.3.2",
+    "robosuite": "1.4.1",
+    "platform": "Windows",
+    "date": "2026-10-21"
+  },
+  "criteria": {
+    "max_state_eef_error_m": 0.01,
+    "max_final_eef_error_m": 0.05
+  },
+  "scope": "State/EEF trajectory replay only; not policy evaluation or full-dataset validation",
+  "samples": [
+    {
+      "file": "recovery_coffee_collision_holding_D0_0011.npz",
+      "subtype": "unknown",
+      "source": "human",
+      "action_len": 77,
+      "state_replay_ok": true,
+      "max_state_err": 0.0002415842993921548,
+      "mean_state_err": 0.0001574677417998857,
+      "action_replay_ok": true,
+      "final_eef_err": 0.00037421978681363943,
+      "within_replay_tolerances": true
+    },
+    {
+      "file": "aug_recovery_stack_drop_at_wrong_place_D1_0000_v5_train_drop_at_wrong_place_D1_004_c41a0e14_6833.npz",
+      "subtype": "unknown",
+      "source": "augmented",
+      "action_len": 57,
+      "state_replay_ok": true,
+      "max_state_err": 0.0018369168293294149,
+      "mean_state_err": 0.00044183366718935615,
+      "action_replay_ok": true,
+      "final_eef_err": 0.12114196110141869,
+      "within_replay_tolerances": false,
+      "task_success_diagnostic": {
+        "stored_final_task_success": true,
+        "initial_task_success": false,
+        "replayed_final_task_success": false,
+        "max_replay_success_streak": 0,
+        "final_eef_error_m": 0.11685274011379991
+      }
+    }
+  ]
+}

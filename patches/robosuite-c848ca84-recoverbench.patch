@@ -1,0 +1,131 @@
+diff --git a/robosuite/models/objects/generated_objects.py b/robosuite/models/objects/generated_objects.py
+index 6e18caa4..2a481e56 100644
+--- a/robosuite/models/objects/generated_objects.py
++++ b/robosuite/models/objects/generated_objects.py
+@@ -66,12 +66,22 @@ class CompositeBodyObject(MujocoGeneratedObject):
+         joints="default",
+         body_joints=None,
+         sites=None,
++        total_size=None,
++        locations_relative_to_corner=False,
+     ):
+         # Always call superclass first
+         super().__init__()
+ 
+         self._name = name
+ 
++        # Store total_size for bounding box computation
++        self._total_size = np.array(total_size) if total_size is not None else None
++
++        self.locations_relative_to_corner = locations_relative_to_corner
++        if self.locations_relative_to_corner:
++            assert self._total_size is not None, \
++                "Must supply total_size when locations_relative_to_corner=True"
++
+         # Set internal variable geometric properties which will be modified later
+         self._object_absolute_positions = {"root": np.zeros(3)}  # maps body names to abs positions (rel to root)
+         self._top = 0
+@@ -194,6 +204,13 @@ class CompositeBodyObject(MujocoGeneratedObject):
+         # Get the object xml element tree, remove its top-level joints, and modify its top-level pos / quat
+         child = obj.get_obj()
+         self._remove_joints(child)
++        if self.locations_relative_to_corner:
++            cartesian_size = obj.get_bounding_box_half_size()
++            pos = [
++                (-self._total_size[0] + cartesian_size[0]) + pos[0],
++                (-self._total_size[1] + cartesian_size[1]) + pos[1],
++                (-self._total_size[2] + cartesian_size[2]) + pos[2],
++            ]
+         child.set("pos", array_to_string(pos))
+         child.set("quat", array_to_string(quat))
+         # Add this object and its assets to this composite object
+@@ -247,6 +264,15 @@ class CompositeBodyObject(MujocoGeneratedObject):
+         for child in children_to_remove:
+             body.remove(child)
+ 
++    def get_bounding_box_half_size(self):
++        """
++        Returns the (x, y, z) half-size bounding box of this composite body object.
++        """
++        if self._total_size is not None:
++            return np.array(self._total_size)
++        half_z = (self._top - self._bottom) / 2.0
++        return np.array([self._horizontal, self._horizontal, half_z])
++
+     @property
+     def bottom_offset(self):
+         return np.array([0.0, 0.0, self._bottom])
+diff --git a/robosuite/models/objects/objects.py b/robosuite/models/objects/objects.py
+index 2ceb959c..65709acf 100644
+--- a/robosuite/models/objects/objects.py
++++ b/robosuite/models/objects/objects.py
+@@ -2,6 +2,8 @@ import copy
+ import xml.etree.ElementTree as ET
+ from copy import deepcopy
+ 
++import numpy as np
++
+ import robosuite.macros as macros
+ from robosuite.models.base import MujocoModel, MujocoXML
+ from robosuite.utils.mjcf_utils import (
+@@ -443,6 +445,19 @@ class MujocoXMLObject(MujocoObject, MujocoXML):
+         # Return all found pairs
+         return geom_pairs
+ 
++    def get_bounding_box_half_size(self):
++        """
++        Returns the (x, y, z) half-size bounding box of this object, computed from
++        the horizontal_radius_site (x, y) and bottom/top sites (z).
++        """
++        horizontal_radius_site = self.worldbody.find(
++            "./body/site[@name='{}horizontal_radius_site']".format(self.naming_prefix)
++        )
++        site_pos = string_to_array(horizontal_radius_site.get("pos"))
++        bottom = self.bottom_offset[2]
++        top = self.top_offset[2]
++        return np.array([site_pos[0], site_pos[1], (top - bottom) / 2.0])
++
+     @property
+     def bottom_offset(self):
+         bottom_site = self.worldbody.find("./body/site[@name='{}bottom_site']".format(self.naming_prefix))
+diff --git a/robosuite/models/objects/primitive/box.py b/robosuite/models/objects/primitive/box.py
+index 50c6d962..05d18383 100644
+--- a/robosuite/models/objects/primitive/box.py
++++ b/robosuite/models/objects/primitive/box.py
+@@ -55,6 +55,12 @@ class BoxObject(PrimitiveObject):
+     def _get_object_subtree(self):
+         return self._get_object_subtree_(ob_type="box")
+ 
++    def get_bounding_box_half_size(self):
++        """
++        Returns the (x, y, z) half-size bounding box of this box object.
++        """
++        return np.array(self.size)
++
+     @property
+     def bottom_offset(self):
+         return np.array([0, 0, -1 * self.size[2]])
+diff --git a/robosuite/utils/binding_utils.py b/robosuite/utils/binding_utils.py
+index fd46540e..ca362128 100644
+--- a/robosuite/utils/binding_utils.py
++++ b/robosuite/utils/binding_utils.py
+@@ -30,9 +30,16 @@ CUDA_VISIBLE_DEVICES = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+ if CUDA_VISIBLE_DEVICES != "":
+     MUJOCO_EGL_DEVICE_ID = os.environ.get("MUJOCO_EGL_DEVICE_ID", None)
+     if MUJOCO_EGL_DEVICE_ID is not None:
+-        assert MUJOCO_EGL_DEVICE_ID.isdigit() and (
+-            MUJOCO_EGL_DEVICE_ID in CUDA_VISIBLE_DEVICES
+-        ), "MUJOCO_EGL_DEVICE_ID needs to be set to one of the device id specified in CUDA_VISIBLE_DEVICES"
++        visible_devices = [dev.strip() for dev in CUDA_VISIBLE_DEVICES.split(",") if dev.strip()]
++        assert MUJOCO_EGL_DEVICE_ID.isdigit(), "MUJOCO_EGL_DEVICE_ID must be an integer"
++        egl_device_id = int(MUJOCO_EGL_DEVICE_ID)
++        assert (
++            MUJOCO_EGL_DEVICE_ID in visible_devices
++            or 0 <= egl_device_id < len(visible_devices)
++        ), (
++            "MUJOCO_EGL_DEVICE_ID must refer either to a visible physical device id "
++            "or to the local index after CUDA_VISIBLE_DEVICES remapping"
++        )
+ 
+ if macros.MUJOCO_GPU_RENDERING and os.environ.get("MUJOCO_GL", None) not in ["osmesa", "glx"]:
+     # If gpu rendering is specified in macros, then we enforce gpu

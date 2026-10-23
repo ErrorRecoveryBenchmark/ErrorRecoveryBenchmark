@@ -25,6 +25,9 @@ import tempfile
 import time
 from pathlib import Path
 
+# Use 'spawn' to avoid EGL context corruption when forking after GPU init
+multiprocessing.set_start_method("spawn", force=True)
+
 os.environ["MUJOCO_GL"] = "egl"
 os.environ.setdefault("MUJOCO_EGL_DEVICE_ID", "0")
 os.environ["PYOPENGL_PLATFORM"] = "egl"
@@ -140,7 +143,7 @@ def _sample_action_steps(n_actions, max_steps, seed):
     return sorted(int(i) for i in indices)
 
 
-def _preflight_hdf5(hdf5_path, min_action_len):
+def _preflight_hdf5(hdf5_path, min_action_len, require_obs=True):
     report = {
         "status": "PASS",
         "input_hdf5": str(hdf5_path),
@@ -160,11 +163,10 @@ def _preflight_hdf5(hdf5_path, min_action_len):
         for demo_key in demo_keys:
             try:
                 demo = container[demo_key]
-                if "actions" not in demo or "states" not in demo or "obs" not in demo:
-                    raise ValueError("missing actions/states/obs")
+                if "actions" not in demo or "states" not in demo:
+                    raise ValueError("missing actions/states")
                 actions = demo["actions"][()]
                 states = demo["states"][()]
-                obs = demo["obs"]
 
                 if actions.ndim != 2 or actions.shape[1] != 7:
                     raise ValueError(f"actions shape must be (T,7), got {actions.shape}")
@@ -181,9 +183,12 @@ def _preflight_hdf5(hdf5_path, min_action_len):
                 _finite("actions", actions)
                 _finite("states", states)
 
+                obs = demo["obs"] if "obs" in demo else None
                 for key in required_obs:
-                    if key not in obs:
-                        raise ValueError(f"missing obs/{key}")
+                    if obs is None or key not in obs:
+                        if require_obs:
+                            raise ValueError(f"missing obs/{key}")
+                        continue
                     arr = obs[key][()]
                     if len(arr) < len(actions):
                         raise ValueError(
@@ -228,14 +233,19 @@ def _load_demo_arrays(demo_key):
     with h5py.File(_worker_hdf5_path, "r") as h5_file:
         container = h5_file["data"] if "data" in h5_file else h5_file
         demo = container[demo_key]
-        obs = demo["obs"]
-        return {
+        arrays = {
             "actions": demo["actions"][()].astype(np.float32),
             "states": demo["states"][()].astype(np.float64),
-            "eef_pos": obs["robot0_eef_pos"][()].astype(np.float64),
-            "eef_quat": obs["robot0_eef_quat"][()].astype(np.float64),
-            "gripper_qpos": obs["robot0_gripper_qpos"][()].astype(np.float64),
         }
+        obs = demo["obs"] if "obs" in demo else None
+        if obs is not None:
+            if "robot0_eef_pos" in obs:
+                arrays["eef_pos"] = obs["robot0_eef_pos"][()].astype(np.float64)
+            if "robot0_eef_quat" in obs:
+                arrays["eef_quat"] = obs["robot0_eef_quat"][()].astype(np.float64)
+            if "robot0_gripper_qpos" in obs:
+                arrays["gripper_qpos"] = obs["robot0_gripper_qpos"][()].astype(np.float64)
+        return arrays
 
 
 def _state8_from_env():
@@ -311,9 +321,12 @@ def _render_one_demo(item):
         wrist_imgs = np.empty((n_frames, 84, 84, 3), dtype=np.uint8)
         state8 = np.empty((n_frames, 8), dtype=np.float32)
 
-        max_eef_obs_err = 0.0
-        max_quat_obs_err = 0.0
-        max_gripper_obs_err = 0.0
+        has_obs_validation = all(
+            key in arrays for key in ("eef_pos", "eef_quat", "gripper_qpos")
+        )
+        max_eef_obs_err = 0.0 if has_obs_validation else None
+        max_quat_obs_err = 0.0 if has_obs_validation else None
+        max_gripper_obs_err = 0.0 if has_obs_validation else None
         bad_image_frames = 0
 
         for frame_idx in range(n_frames):
@@ -330,21 +343,22 @@ def _render_one_demo(item):
             if float(wrist_img.std()) < _worker_cfg["image_min_std"]:
                 bad_image_frames += 1
 
-            eef_obs_err = float(
-                np.linalg.norm(_worker_env.get_eef_pos() - arrays["eef_pos"][frame_idx])
-            )
-            quat_obs_err = _quat_angle_error_xyzw(
-                _worker_env.get_eef_quat(), arrays["eef_quat"][frame_idx]
-            )
-            gripper_obs_err = float(
-                np.linalg.norm(
-                    _worker_env.get_gripper_qpos_raw()
-                    - arrays["gripper_qpos"][frame_idx]
+            if has_obs_validation:
+                eef_obs_err = float(
+                    np.linalg.norm(_worker_env.get_eef_pos() - arrays["eef_pos"][frame_idx])
                 )
-            )
-            max_eef_obs_err = max(max_eef_obs_err, eef_obs_err)
-            max_quat_obs_err = max(max_quat_obs_err, quat_obs_err)
-            max_gripper_obs_err = max(max_gripper_obs_err, gripper_obs_err)
+                quat_obs_err = _quat_angle_error_xyzw(
+                    _worker_env.get_eef_quat(), arrays["eef_quat"][frame_idx]
+                )
+                gripper_obs_err = float(
+                    np.linalg.norm(
+                        _worker_env.get_gripper_qpos_raw()
+                        - arrays["gripper_qpos"][frame_idx]
+                    )
+                )
+                max_eef_obs_err = max(max_eef_obs_err, eef_obs_err)
+                max_quat_obs_err = max(max_quat_obs_err, quat_obs_err)
+                max_gripper_obs_err = max(max_gripper_obs_err, gripper_obs_err)
 
         action_result = {"checked": 0, "failed": 0}
         if validate_action:
@@ -353,11 +367,15 @@ def _render_one_demo(item):
         failures = []
         if bad_image_frames:
             failures.append(f"{bad_image_frames} low-variance camera frames")
-        if max_eef_obs_err > _worker_cfg["obs_eef_tolerance"]:
+        if has_obs_validation and max_eef_obs_err > _worker_cfg["obs_eef_tolerance"]:
             failures.append(f"eef obs err {max_eef_obs_err:.6g}")
-        if _worker_cfg.get("strict_obs_quat") and max_quat_obs_err > _worker_cfg["obs_quat_tolerance"]:
+        if (
+            has_obs_validation
+            and _worker_cfg.get("strict_obs_quat")
+            and max_quat_obs_err > _worker_cfg["obs_quat_tolerance"]
+        ):
             failures.append(f"quat obs err {max_quat_obs_err:.6g}")
-        if max_gripper_obs_err > _worker_cfg["obs_gripper_tolerance"]:
+        if has_obs_validation and max_gripper_obs_err > _worker_cfg["obs_gripper_tolerance"]:
             failures.append(f"gripper obs err {max_gripper_obs_err:.6g}")
         if action_result.get("failed", 0):
             failures.append(f"{action_result['failed']} action replay samples failed")
@@ -370,6 +388,7 @@ def _render_one_demo(item):
                 "error": "; ".join(failures),
                 "action_replay": action_result,
                 "state_obs": {
+                    "checked": has_obs_validation,
                     "max_eef_err": max_eef_obs_err,
                     "max_quat_angle": max_quat_obs_err,
                     "max_gripper_err": max_gripper_obs_err,
@@ -393,6 +412,7 @@ def _render_one_demo(item):
             "tmp_path": tmp_path,
             "action_replay": action_result,
             "state_obs": {
+                "checked": has_obs_validation,
                 "max_eef_err": max_eef_obs_err,
                 "max_quat_angle": max_quat_obs_err,
                 "max_gripper_err": max_gripper_obs_err,
@@ -467,6 +487,8 @@ def main():
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument("--allow-missing-obs", action="store_true",
+                        help="Allow demos without obs/* validation arrays; states/actions are still replayed and rendered")
     parser.add_argument("--dry-run", type=int, default=None)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--action-replay-demo-samples", type=int, default=32)
@@ -483,7 +505,7 @@ def main():
     parser.add_argument("--image-writer-processes", type=int, default=8)
     parser.add_argument("--lerobot-writer-python",
                         default=os.environ.get("LEROBOT_WRITER_PYTHON",
-                                               "${CONDA_BASE}/envs/openpi05/bin/python"),
+                                               sys.executable),
                         help="Python executable with lerobot installed; used only for writing cached frames")
     args = parser.parse_args()
 
@@ -522,6 +544,7 @@ def main():
             "strict_obs_quat": args.strict_obs_quat,
             "obs_gripper_tolerance": args.obs_gripper_tolerance,
             "image_min_std": args.image_min_std,
+            "allow_missing_obs": args.allow_missing_obs,
         },
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
@@ -532,7 +555,11 @@ def main():
             raise FileNotFoundError(f"input HDF5 not found: {hdf5_path}")
 
         logger.info("Preflight HDF5: %s", hdf5_path)
-        demo_keys, preflight = _preflight_hdf5(hdf5_path, args.min_action_len)
+        demo_keys, preflight = _preflight_hdf5(
+            hdf5_path,
+            args.min_action_len,
+            require_obs=not args.allow_missing_obs,
+        )
         if args.dry_run:
             demo_keys = demo_keys[: args.dry_run]
             preflight["accepted_demos_after_dry_run"] = len(demo_keys)

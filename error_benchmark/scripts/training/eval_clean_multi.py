@@ -5,10 +5,12 @@ Runs a batched VLA server and 48 parallel rollout workers.
 """
 
 import argparse
+import hashlib
 import json
 import logging
 import multiprocessing as mp
 import os
+import random
 import subprocess
 import sys
 import time
@@ -20,25 +22,60 @@ PROJECT_DIR = Path(__file__).resolve().parents[3]
 VLA_SERVER_PY = PROJECT_DIR / "archive" / "v4" / "framework" / "vla_server.py"
 CONDA_BIN = Path(os.environ.get("CONDA_DIR", Path.home() / "miniconda3")) / "bin" / "conda"
 
+sys.path.insert(0, str(PROJECT_DIR))
+from error_benchmark.scripts.training.success_tracker import (
+    ConsecutiveSuccessTracker,
+    SUCCESS_CRITERION_NAME,
+    SUCCESS_STREAK_FRAMES,
+)
+
 TASK_PROMPTS = {
     "threading": "insert the needle into the needle hole",
     "coffee": "make coffee",
     "pick_place": "pick up the milk, cereal, bread, and can and place them in the correct bins",
     "stack": "stack the red block on top of the green block",
+    "stack_three": "stack three blocks",
+    "three_piece_assembly": "assemble the three pieces",
 }
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def worker_rollout(worker_id: int, port: int, task: str, max_steps: int, prompt: str, output_dir: Path):
+def configure_runtime_env(gpu_id: int) -> None:
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    os.environ["MUJOCO_GL"] = "egl"
+    os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = "0"
+
+
+def worker_rollout(
+    worker_id: int,
+    gpu_id: int,
+    port: int,
+    task: str,
+    max_steps: int,
+    prompt: str,
+    output_dir: Path,
+    success_streak_frames: int,
+    seed_base: int | None,
+    replan_interval: int,
+    render_rollout_id: int | None,
+):
     """Run a single clean rollout and save result."""
     result_file = output_dir / f"rollout_{worker_id}.json"
+    recorder = None
 
     try:
+        configure_runtime_env(gpu_id)
         sys.path.insert(0, str(PROJECT_DIR))
         sys.path.insert(0, str(PROJECT_DIR / "shared" / "mimicgen_workspace" / "robosuite"))
         sys.path.insert(0, str(PROJECT_DIR / "shared" / "mimicgen_workspace" / "mimicgen"))
+
+        if seed_base is not None:
+            seed = seed_base + worker_id
+            random.seed(seed)
+            np.random.seed(seed)
 
         from error_benchmark.scripts.utils.script_utils import create_env, load_task_registry
         from error_benchmark.framework.env_wrapper import EnvWrapper
@@ -57,12 +94,26 @@ def worker_rollout(worker_id: int, port: int, task: str, max_steps: int, prompt:
             host="localhost",
             port=port,
             task_prompt=prompt,
-            replan_interval=5,
+            replan_interval=replan_interval,
             connection_timeout=30.0,
         )
 
         obs = env.reset()
+        if render_rollout_id == worker_id:
+            from error_benchmark.framework.video_recorder import VideoRecorder
+
+            recorder = VideoRecorder(output_dir / f"rollout_{worker_id}.mp4")
+            recorder.capture_frame(env_wrapper)
+
+        fingerprint = hashlib.sha256()
+        for key in sorted(obs):
+            value = np.asarray(obs[key])
+            fingerprint.update(key.encode("utf-8"))
+            fingerprint.update(str(value.dtype).encode("ascii"))
+            fingerprint.update(str(value.shape).encode("ascii"))
+            fingerprint.update(value.tobytes())
         policy.start_episode()
+        tracker = ConsecutiveSuccessTracker(n=success_streak_frames)
         success = False
         steps_taken = 0
 
@@ -70,14 +121,20 @@ def worker_rollout(worker_id: int, port: int, task: str, max_steps: int, prompt:
             result = policy.predict_from_obs(obs)
             obs, reward, done, info = env_wrapper.step(result.action)
             steps_taken = step + 1
-            if env_wrapper.check_success():
+            if recorder is not None:
+                recorder.capture_frame(env_wrapper)
+            if tracker.update(bool(env_wrapper.check_success())):
                 success = True
                 break
 
+        if recorder is not None:
+            recorder.close()
         policy.close()
 
         result = {
             "rollout_id": worker_id,
+            "seed": None if seed_base is None else seed_base + worker_id,
+            "initial_observation_sha256": fingerprint.hexdigest(),
             "success": success,
             "steps": steps_taken,
         }
@@ -88,6 +145,8 @@ def worker_rollout(worker_id: int, port: int, task: str, max_steps: int, prompt:
         logger.info(f"  Worker {worker_id}: {status} in {steps_taken} steps")
 
     except Exception as e:
+        if recorder is not None:
+            recorder.close()
         logger.error(f"  Worker {worker_id}: ERROR {e}")
         result = {
             "rollout_id": worker_id,
@@ -106,10 +165,46 @@ def main():
     parser.add_argument("--port", type=int, default=5555)
     parser.add_argument("--num_clean", type=int, default=50)
     parser.add_argument("--num_workers", type=int, default=48)
-    parser.add_argument("--max_steps", type=int, default=1000)
+    parser.add_argument("--max_steps", type=int, default=500)
     parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--output_dir", type=str, required=True)
+    parser.add_argument(
+        "--seed-base",
+        type=int,
+        default=None,
+        help="Deterministically seed rollout i with seed_base + i.",
+    )
+    parser.add_argument(
+        "--success-streak-frames",
+        type=int,
+        choices=(1, SUCCESS_STREAK_FRAMES),
+        default=SUCCESS_STREAK_FRAMES,
+        help="1 reproduces the paper Pi0.5 sweep; 10 uses the current protocol.",
+    )
+    parser.add_argument(
+        "--external_server",
+        action="store_true",
+        help="Use an already-running compatible TCP policy server.",
+    )
+    parser.add_argument(
+        "--replan-interval",
+        type=int,
+        default=5,
+        help="Number of actions consumed from each predicted action chunk.",
+    )
+    parser.add_argument(
+        "--render-rollout-id",
+        type=int,
+        default=None,
+        help="Record the selected rollout to output_dir/rollout_<id>.mp4.",
+    )
     args = parser.parse_args()
+    if args.replan_interval < 1:
+        parser.error("--replan-interval must be >= 1")
+    if args.render_rollout_id is not None and not (
+        0 <= args.render_rollout_id < args.num_clean
+    ):
+        parser.error("--render-rollout-id must identify a requested rollout")
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -119,25 +214,31 @@ def main():
 
     prompt = TASK_PROMPTS[args.task]
 
-    # Start batched VLA server
-    logger.info(f"Starting batched VLA server on GPU {args.gpu}, port {args.port}")
-    server_cmd = [
-        str(CONDA_BIN), "run", "-n", "openpi05",
-        "python", str(VLA_SERVER_PY),
-        "--model_type", "pi05",
-        "--config_name", f"pi05_benchmark_{args.task}_merged_inference",
-        "--checkpoint", args.checkpoint,
-        "--port", str(args.port),
-        "--device", "cuda:0",
-        "--batched",
-        "--max_clients", str(args.num_workers + 4),
-        "--max_batch_size", str(args.num_workers),
-    ]
-    env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    server_proc = None
+    if not args.external_server:
+        logger.info(f"Starting batched VLA server on GPU {args.gpu}, port {args.port}")
+        server_cmd = [
+            str(CONDA_BIN), "run", "-n", "openpi05",
+            "python", str(VLA_SERVER_PY),
+            "--model_type", "pi05",
+            "--config_name", f"pi05_benchmark_{args.task}_merged_inference",
+            "--checkpoint", args.checkpoint,
+            "--port", str(args.port),
+            "--device", "cuda:0",
+            "--batched",
+            "--max_clients", str(args.num_workers + 4),
+            "--max_batch_size", str(args.num_workers),
+        ]
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 
-    server_log = logs_dir / "vla_server.log"
-    server_proc = subprocess.Popen(server_cmd, stdout=open(server_log, "w"), stderr=subprocess.STDOUT, env=env)
+        server_log = logs_dir / "vla_server.log"
+        server_proc = subprocess.Popen(
+            server_cmd,
+            stdout=open(server_log, "w"),
+            stderr=subprocess.STDOUT,
+            env=env,
+        )
 
     # Wait for server
     logger.info("Waiting for VLA server to start...")
@@ -155,21 +256,37 @@ def main():
             time.sleep(3)
     else:
         logger.error("VLA server failed to start")
-        server_proc.kill()
+        if server_proc is not None:
+            server_proc.kill()
         sys.exit(1)
 
     # Run workers
     logger.info(f"Running {args.num_clean} clean rollouts with {args.num_workers} workers...")
 
-    workers = []
-    for i in range(args.num_clean):
-        p = mp.Process(target=worker_rollout, args=(i, args.port, args.task, args.max_steps, prompt, output_dir))
-        p.start()
-        workers.append(p)
-
-    # Wait for all workers
-    for p in workers:
-        p.join()
+    for batch_start in range(0, args.num_clean, args.num_workers):
+        workers = []
+        batch_end = min(batch_start + args.num_workers, args.num_clean)
+        for i in range(batch_start, batch_end):
+            p = mp.Process(
+                target=worker_rollout,
+                args=(
+                    i,
+                    args.gpu,
+                    args.port,
+                    args.task,
+                    args.max_steps,
+                    prompt,
+                    output_dir,
+                    args.success_streak_frames,
+                    args.seed_base,
+                    args.replan_interval,
+                    args.render_rollout_id,
+                ),
+            )
+            p.start()
+            workers.append(p)
+        for p in workers:
+            p.join()
 
     # Aggregate results
     results = []
@@ -190,7 +307,15 @@ def main():
         "checkpoint": args.checkpoint,
         "checkpoint_step": Path(args.checkpoint).name,
         "max_steps": args.max_steps,
+        "success_criterion": (
+            "single_frame"
+            if args.success_streak_frames == 1
+            else SUCCESS_CRITERION_NAME
+        ),
+        "success_streak_frames": args.success_streak_frames,
         "num_workers": args.num_workers,
+        "seed_base": args.seed_base,
+        "render_rollout_id": args.render_rollout_id,
         "clean_rollouts": {
             "sr": sr,
             "total": total,
@@ -203,18 +328,18 @@ def main():
 
     logger.info(f"Results saved to {output_dir / args.task}.json")
 
-    # Stop server
-    logger.info("Stopping VLA server...")
-    try:
-        import socket
-        s = socket.socket()
-        s.connect(("127.0.0.1", args.port))
-        msg = pickle.dumps({"cmd": "shutdown"})
-        s.sendall(struct.pack("!I", len(msg)) + msg)
-        s.close()
-    except:
-        server_proc.kill()
-    server_proc.wait()
+    if server_proc is not None:
+        logger.info("Stopping VLA server...")
+        try:
+            import socket
+            s = socket.socket()
+            s.connect(("127.0.0.1", args.port))
+            msg = pickle.dumps({"cmd": "shutdown"})
+            s.sendall(struct.pack("!I", len(msg)) + msg)
+            s.close()
+        except Exception:
+            server_proc.kill()
+        server_proc.wait()
 
 
 if __name__ == "__main__":

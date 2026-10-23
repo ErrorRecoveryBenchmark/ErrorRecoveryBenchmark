@@ -14,7 +14,7 @@ Reporting RSR without CSR re-creates the mis-measurement problem RecoverBench ex
 
 **Definition.** Task success on any RecoverBench task is determined by the underlying robosuite environment's `_check_success()` method, returning `True` for **10 consecutive frames** during a rollout.
 
-**Reference implementation** (e.g., for `stack`, in `release_code/shared/mimicgen_workspace/robosuite/robosuite/environments/manipulation/stack.py`): "blocks are correctly stacked" iff (1) the lifted block exceeds the table height threshold, (2) the gripper is no longer holding it, and (3) the held block contacts the target block.
+**Reference implementation** (e.g., for `stack`, in `shared/mimicgen_workspace/robosuite/robosuite/environments/manipulation/stack.py`): "blocks are correctly stacked" iff (1) the lifted block exceeds the table height threshold, (2) the gripper is no longer holding it, and (3) the held block contacts the target block.
 
 **Do not relax this criterion under any circumstance, for any RBG, including RBG_E (Realign).** RBG_E is the most tempting case to loosen — its recovery primitive is `correct_position → resume_task`, and a tempting-but-wrong relaxation is to score the policy as successful once it has reached "near the goal" without actually completing the task. **This relaxation is forbidden.** Accepting positional progress in lieu of task completion would conflate progress with completion and re-open the very capability-overestimation gap RecoverBench is built to close. The 10-consecutive-frame `_check_success()` is the only valid criterion for any RBG.
 
@@ -25,7 +25,7 @@ This rule is load-bearing: it should not be loosened in future revisions of the 
 ## 2. From-error-state evaluation (Recovery Success Rate)
 
 **Per-scene procedure:**
-1. Load the error scene NPZ from `release_data/error_scenes/<task>/<subtype>/scene_NNNN.npz`.
+1. Load the error scene NPZ from the downloaded dataset’s `error_scenes/<task>/scenes/<scene_id>.npz`.
 2. Initialize the environment with `sim_state = post_sim_state` and the matching JSON's `RNG seed` and `environment fingerprint`.
 3. Run the policy for at most **500 simulation steps**.
 4. Score success per §1 (10-consecutive-frame `_check_success()`).
@@ -86,21 +86,18 @@ Copy this template into your paper. Replace `[Method]` with your method name and
 
 ---
 
-## 6. Reference numbers (Pi0.5 task-specific fine-tune)
+## 6. Paper results and reproducibility
 
-The reference baseline reported in the RecoverBench paper. Use as a sanity check that your evaluation harness reproduces published numbers when running the same policy.
+The accepted-paper materials report 661 / 1,360 recoveries (48.6%) for Pi 0.5
+(Recovery). The earlier 41 / 1,107 (3.7%) pilot result is a different experimental
+version and must not be used as the reference for this release. This is a cited
+paper result, not a new reproduction under the protocol above.
 
-| Task | RSR (Pi0.5 task-specific FT) | Notes |
-|---|---|---|
-| stack | **9.17%** | best per-task RSR |
-| three_piece_assembly | 4.42% |  |
-| stack_three | 3.33% |  |
-| pick_place | 1.22% |  |
-| threading | TBD | (see paper for final number) |
-| coffee | **0%** | worst per-task RSR |
-| **Overall** | **3.7%** (41 / 1,107) | headline gap number |
-
-Headline takeaway from these references: even the best task-specific fine-tuned VLA we evaluate recovers from less than 1 in 10 error scenarios on its strongest task and 0 on its weakest. The same policy achieves competitive CSR on these tasks; the gap is the contribution.
+A reproducible result additionally needs the exact checkpoint, training-data
+manifest, evaluation manifest, rollout seed, and success settings. The repository's
+camera-ready validation does not certify that every historical paper run used the
+current 10-frame / 500-step protocol. Historical deviations must be disclosed
+rather than silently reinterpreting the published score.
 
 ---
 

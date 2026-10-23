@@ -47,6 +47,7 @@ from error_benchmark.framework.recovery_types import (
 )
 from error_benchmark.framework.recovery_mimicgen import (
     build_recovery_subtask_specs,
+    infer_manipulated_object,
     make_pose_from_pos_quat,
     resolve_subtask_object_ref,
 )
@@ -530,15 +531,21 @@ class RecoveryAugmenter:
     ) -> str:
         scene_labels = target_scene.get("labels", {})
         target_object = scene_labels.get("target_object", "")
-        if target_object:
-            return target_object
+        if not target_object:
+            for demo in source_demos:
+                target_object = demo.metadata.get("target_object", "")
+                if target_object:
+                    break
+        if not target_object:
+            target_object = self.env.get_target_object() or ""
 
-        for demo in source_demos:
-            target_object = demo.metadata.get("target_object", "")
-            if target_object:
-                return target_object
-
-        return self.env.get_target_object() or ""
+        # The object-centric warp must anchor on the object the recovery
+        # actually re-grasps, not the object the ERROR involved. For multi-object
+        # tasks (stack_three, three_piece_assembly) the error-scene label often
+        # names a different object than the re-grasped one, which lands the warp
+        # ~(object separation) off and fails every check_success(). Correct it
+        # from source-demo geometry (no-op when they already agree).
+        return infer_manipulated_object(source_demos, target_object)
 
     def _get_source_object_pose(
         self,
@@ -973,10 +980,29 @@ class RecoveryAugmenter:
             )
 
             if object_ref is not None:
+                # C2 fix (selective by recovery type): for recoveries that must
+                # RE-GRASP a free, resting object (RBG A/B/D), anchor the warp by
+                # object POSITION only. The resting cube's random YAW otherwise
+                # rotates the (slightly off-center) grasp approach and lands the
+                # warped grasp target ~7cm off the real object -> 0% success.
+                # Collision (RBG_C, object often held) and realign (RBG_E)
+                # recoveries keep the full 6-DOF warp, where object orientation
+                # is meaningful (position-only regressed those).
+                _REGRASP_ERRORS = {
+                    "grasp_misalignment", "grasp_wrong_pose",
+                    "drop_in_transit", "drop_at_wrong_place", "wrong_object",
+                }
+                _obj_pose_w = current_object_pose
+                _src_obj_pose_w = selected["src_object_pose"]
+                if getattr(selected_demo, "error_name", None) in _REGRASP_ERRORS:
+                    _obj_pose_w = np.array(_obj_pose_w, dtype=float).copy()
+                    _src_obj_pose_w = np.array(_src_obj_pose_w, dtype=float).copy()
+                    _obj_pose_w[:3, :3] = np.eye(3)
+                    _src_obj_pose_w[:3, :3] = np.eye(3)
                 transformed_eef_poses = transform_source_data_segment_using_object_pose(
-                    obj_pose=current_object_pose,
+                    obj_pose=_obj_pose_w,
                     src_eef_poses=src_eef_poses,
-                    src_obj_pose=selected["src_object_pose"],
+                    src_obj_pose=_src_obj_pose_w,
                 )
             else:
                 transformed_eef_poses = src_eef_poses
@@ -1791,7 +1817,8 @@ def main():
         logger.info(f"  Augmented: {augmented_count}")
 
     # Save manifest
-    manifest_path = output_dir / "augmentation_manifest.json"
+    manifest_suffix = f"_{args.subtype}_{args.seed}" if args.subtype else ""
+    manifest_path = output_dir / f"augmentation_manifest{manifest_suffix}.json"
     aug_manifest['total_augmented'] = total_augmented
     aug_manifest['created'] = datetime.now().isoformat()
     with open(manifest_path, 'w') as f:

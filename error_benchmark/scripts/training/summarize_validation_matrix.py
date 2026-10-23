@@ -5,8 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
+
+PROJECT_DIR = Path(__file__).resolve().parents[3]
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
+from error_benchmark.scripts.training.eval_metrics import compare_error_scene_srs
 
 
 TASK_EVAL_NAMES = {
@@ -265,18 +271,83 @@ def render_markdown(summary: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def run_comparison(normal_path: Path, recovery_path: Path) -> dict:
+    """Fisher exact comparison (recovery > normal) from two result JSONs."""
+    normal = load_json(normal_path) or {}
+    recovery = load_json(recovery_path) or {}
+    n_err = normal.get("error_scenes", normal)
+    r_err = recovery.get("error_scenes", recovery)
+    return {
+        "normal_path": str(normal_path),
+        "recovery_path": str(recovery_path),
+        "normal_task": normal.get("task"),
+        "recovery_task": recovery.get("task"),
+        "comparison": compare_error_scene_srs(n_err, r_err),
+    }
+
+
+def render_comparison_markdown(result: dict) -> str:
+    cmp = result.get("comparison", {})
+    lines = [
+        "# Recovery vs Normal — Fisher Exact (M16)",
+        "",
+        f"- normal: `{result.get('normal_path')}`",
+        f"- recovery: `{result.get('recovery_path')}`",
+        "",
+        "| Level | Key | recovery | normal | p_value | significant |",
+        "|---|---|---|---|---|---|",
+    ]
+
+    def _row(level: str, key: str, fr: dict) -> None:
+        tbl = fr["table"]
+        rec = f"{tbl[0][0]}/{tbl[0][0] + tbl[0][1]}"
+        nor = f"{tbl[1][0]}/{tbl[1][0] + tbl[1][1]}"
+        lines.append(f"| {level} | {key} | {rec} | {nor} | {fr['p_value']:.4g} | {fr['significant']} |")
+
+    if "overall" in cmp:
+        _row("overall", "-", cmp["overall"])
+    for level in ("by_rbg", "by_subtype"):
+        for key in sorted(cmp.get(level, {})):
+            _row(level, key, cmp[level][key])
+    return "\n".join(lines) + "\n"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-root", required=True)
+    parser.add_argument("--output-root", default=None)
     parser.add_argument("--tasks", nargs="+", default=DEFAULT_TASKS)
     parser.add_argument("--versions", nargs="+", default=DEFAULT_VERSIONS)
     parser.add_argument("--scenes-per-group", default="10")
     parser.add_argument("--group-by", default="subtype_id")
+    parser.add_argument("--compare-normal", default=None,
+                        help="Normal-policy result JSON for the Fisher comparison (M16)")
+    parser.add_argument("--compare-recovery", default=None,
+                        help="Recovery-policy result JSON for the Fisher comparison (M16)")
+    parser.add_argument("--compare-out", default=None,
+                        help="Output path prefix for the comparison (writes .json + .md)")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+
+    # M16 mode: Fisher exact comparison of two explicit result JSONs.
+    if args.compare_normal or args.compare_recovery:
+        if not (args.compare_normal and args.compare_recovery):
+            raise SystemExit("--compare-normal and --compare-recovery must be given together")
+        result = run_comparison(Path(args.compare_normal), Path(args.compare_recovery))
+        out_prefix = Path(args.compare_out) if args.compare_out else Path("recovery_vs_normal")
+        out_prefix.parent.mkdir(parents=True, exist_ok=True)
+        json_path = out_prefix.with_suffix(".json")
+        md_path = out_prefix.with_suffix(".md")
+        json_path.write_text(json.dumps(result, indent=2, default=str))
+        md_path.write_text(render_comparison_markdown(result))
+        print(f"Wrote {json_path}")
+        print(f"Wrote {md_path}")
+        return
+
+    if not args.output_root:
+        raise SystemExit("--output-root is required (or use --compare-normal/--compare-recovery)")
     unknown_tasks = sorted(set(args.tasks) - set(DEFAULT_TASKS))
     if unknown_tasks:
         raise SystemExit(f"Unknown tasks: {', '.join(unknown_tasks)}")

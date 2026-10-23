@@ -1,0 +1,60 @@
+cff-version: 1.2.0
+message: "If you use RecoverBench, please cite the paper below. Please also credit MimicGen (see THIRD_PARTY_NOTICES.md)."
+title: "RecoverBench: A Systematic Benchmark for Error Recovery in Robotic Manipulation"
+abstract: "RecoverBench evaluates how manipulation policies recover from standardized, reproducible post-error simulator states. It provides a taxonomy of 12 Error Skills (24 subtypes at two degrees, grouped into 5 Recovery Behavior Groups), 1,360 evaluation error scenes over six robosuite/MuJoCo tasks, a separate training scene pool, and a corpus of 10,598 recovery trajectories."
+version: 1.1.0
+# TODO(authors): add date-released when release v1.1.0 is uploaded.
+license: MIT  # exceptions: see THIRD_PARTY_NOTICES.md (NVIDIA Source Code License components; CC BY 4.0 source demonstrations)
+repository-code: "https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark"
+repository: "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark"
+url: "https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark"
+keywords:
+  - robotics
+  - manipulation
+  - error recovery
+  - benchmark
+  - imitation learning
+  - MuJoCo
+  - robosuite
+authors:
+  - family-names: Tang
+    given-names: Zijia
+    affiliation: "Duke University"
+  - family-names: Zhao
+    given-names: Ganlong
+    affiliation: "The Chinese University of Hong Kong; Centre for Perceptual and Interactive Intelligence"
+  - family-names: Chen
+    given-names: Xingping
+    affiliation: "Sun Yat-sen University"
+  - family-names: Chen
+    given-names: Junye
+    affiliation: "Sun Yat-sen University"
+  - family-names: Mo
+    given-names: Zihao
+    affiliation: "Sun Yat-sen University"
+  - family-names: Wang
+    given-names: Zedi
+    affiliation: "Sun Yat-sen University"
+  - family-names: Li
+    given-names: Guanbin
+    affiliation: "Sun Yat-sen University; Shenzhen Loop Area Institute; Guangdong Key Laboratory of Big Data Analysis and Processing"
+preferred-citation:
+  type: conference-paper
+  title: "RecoverBench: A Systematic Benchmark for Error Recovery in Robotic Manipulation"
+  collection-title: "Advances in Neural Information Processing Systems (NeurIPS 2026), Evaluations and Datasets Track"
+  year: 2026
+  authors:
+    - family-names: Tang
+      given-names: Zijia
+    - family-names: Zhao
+      given-names: Ganlong
+    - family-names: Chen
+      given-names: Xingping
+    - family-names: Chen
+      given-names: Junye
+    - family-names: Mo
+      given-names: Zihao
+    - family-names: Wang
+      given-names: Zedi
+    - family-names: Li
+      given-names: Guanbin

@@ -1,0 +1,12 @@
+{
+  "validator": "mlcroissant 1.1.1",
+  "mode": "public URLs; no local mapping",
+  "revision": "c4cf11acf5bd9e3c91a13e3b70251a2d1a540cb1",
+  "records": {
+    "eval_scenes": 1360,
+    "training_scenes": 5038,
+    "recovery_demos": 9930,
+    "mimicgen_generated": 668,
+    "recovery_training": 739
+  }
+}

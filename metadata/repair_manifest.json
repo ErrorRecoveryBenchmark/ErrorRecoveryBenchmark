@@ -1,0 +1,76 @@
+[
+  {
+    "source_sha256": "5e16036ef2b02f4d1b0433c83686fc12e1831dffd6b3d410fd1cee9d6b3fd69f",
+    "repaired_sha256": "871e545d423ceda38eb8139ce926f6d72dcf54f0ed89c306ab1e520503c05c49",
+    "preserved_npy_sha256": {
+      "success.npy": "93771288ec45b06fba72b165c461df5b4359f7fbd51b016d47b2dd32c4355296",
+      "num_steps.npy": "94422cb926bede0cc369b738e5deb1190fef1c333fb4d4142c9ee677b4c948c2",
+      "demo_id.npy": "d6731a5f169553a45cffc67fdefb62ef0f9c45285f654cfada4c8331958b57e8",
+      "task_name.npy": "a66ede29e355ba0b6a1cd050a55cd7e72f0811d901eee6b77a845d8b96a2c77c",
+      "error_name.npy": "76ea9fc5a471c297f283400e92c46b89b9a0b9e0c65af6f332e7c3b4469c8fdb",
+      "degree.npy": "d73c1aecc57d122a5f8b1b752b6e5d90e396013172f4932e3401615b7c504c71",
+      "scene_id.npy": "1a0fb9ae305a4ca2db72a91c683f127a61131473b8575e2439612076877d2112",
+      "actions.npy": "315c17ea8c18e25a68335ccc548b0c7c4762e31b64c250abb77196bbf4b6c1a5",
+      "states.npy": "c1e0f37c2c5caf19f5dcc6bc30adf6cbed087cdd87059bd49d968c605a56ebeb",
+      "eef_positions.npy": "10e85be75f4a07144ea269697b4badb24ba2661cbc11b730fa8605c3a946a9a8",
+      "eef_orientations.npy": "90509498963d97b317f064df7fb300b0b42cf587e69cae02096e1fed23946c8b",
+      "target_poses.npy": "9cf79498c50de811811ecbba6429cdcf27692f0e73b1d30fce77b876273d07d4",
+      "gripper_states.npy": "8db7502084acf9a29d3e40392a1b72d7ea232d38f87b001497943b16f01bdeeb",
+      "obj_needle.npy": "6ae01444964cc580dd5824881a861ba2d2e0ff7493cb64f2dd1e7c262d3d0e0a",
+      "obj_tripod.npy": "1d5c99796ddf841bb2050e43ddb20f0e18cd3eb76c2ec26d87c3ffe012d24983",
+      "obj_needle_quat.npy": "2989383f3703ea36e4e871b5a226a1072ad99e1181415177eeaf50348c891800",
+      "obj_tripod_quat.npy": "fbde5990c945e16e08066dba7249858f6f41d101762479813a0f967c361bea06"
+    },
+    "trailing_members": "Unknown: the original central directory is absent; none reconstructed",
+    "num_steps": 380,
+    "note": "Original complete NPY payloads preserved byte-for-byte. camera_images and explicit state alignment are stored in this record; camera_source and camera_metadata describe their rendering provenance.",
+    "archive_member": "recovery_demos_human/threading/collision_eef_object_D1/recovery_threading_collision_eef_object_D1_0027.npz",
+    "numeric_only_sha256": "6a1c1f41f6e078118e884ac36d393968359f94a42fb39118042dfa3a8ff4f650",
+    "image_integration": {
+      "sha256": "871e545d423ceda38eb8139ce926f6d72dcf54f0ed89c306ab1e520503c05c49",
+      "frames": 381,
+      "preserved_members": 17,
+      "camera_source": "state_rerender"
+    },
+    "original_truncated_members": [
+      "camera_images.npy"
+    ]
+  },
+  {
+    "source_sha256": "81c5bf474984253a17b6a01c34036a0150e43839893f140f41a088b6ae12df20",
+    "repaired_sha256": "32490ac0282c43b6daa8fbafa4520a1e3e788c88ce43a235907f5681717cdf7a",
+    "preserved_npy_sha256": {
+      "success.npy": "93771288ec45b06fba72b165c461df5b4359f7fbd51b016d47b2dd32c4355296",
+      "num_steps.npy": "d853eed0573863069fb8f51bda02385e94712a7ed4c4d4f59a64820ca326ac29",
+      "demo_id.npy": "70f75388a5c0c3f38013543301b6c56dc36d75d591fbea96d40b522aaf0fc107",
+      "task_name.npy": "a66ede29e355ba0b6a1cd050a55cd7e72f0811d901eee6b77a845d8b96a2c77c",
+      "error_name.npy": "f1692a7ec56b023770449203feead2f28d71b20bcce77202293e135e901c94f2",
+      "degree.npy": "64bac9ae6fe37cfbb83a89d69be81153758ad4a72bece7b3bd2ca9689a8d1cfb",
+      "scene_id.npy": "3203521561d307cbb573ee6c6f55415c3b711ca61ab4784c9ba41076772df479",
+      "actions.npy": "a880cb84a3514bfc19fbd3bebfaf8629430af99a8d7c94850c2ae1edd4141df0",
+      "states.npy": "8d377368a09f329503f7413b012d72ac7cec6740aeb33f262f9ddd33beacaaaa",
+      "eef_positions.npy": "50d118ee18a605a7e7ae8d921121016e7f82b45c2e7184286a4641e882f28708",
+      "eef_orientations.npy": "30776e3854a9fc94f99f2c4e52a2486d75673ad58f7284f5c9910b9d6bd5bd0d",
+      "target_poses.npy": "cd34239a09246ec712bc6c1cfb5cf68ba488a510a9c5d643541f5536a635215c",
+      "gripper_states.npy": "d4ed14797c35930ced60ce9b516601b5975fb89f62a1d68856dfacfded18c548",
+      "obj_needle.npy": "d49b92ba959120e4ba1edce2045090cdbfae5d35471d3c312d7aaa1c12893eda",
+      "obj_tripod.npy": "6677cc00402c546fb4d101262c0f54bb12f7c9fa744ee613cf0234afea0ce0a5",
+      "obj_needle_quat.npy": "3e3b6a03fa88b2d295872b4068e4b3e66ff97a449ee32b1cc322af4c40336df9",
+      "obj_tripod_quat.npy": "50a611f23b43d19e0f2ca5cd2c520dad73120d5ef2b0a025eae5d45209c35965"
+    },
+    "trailing_members": "Unknown: the original central directory is absent; none reconstructed",
+    "num_steps": 498,
+    "note": "Original complete NPY payloads preserved byte-for-byte. camera_images and explicit state alignment are stored in this record; camera_source and camera_metadata describe their rendering provenance.",
+    "archive_member": "recovery_demos_human/threading/grasp_wrong_pose_D0/recovery_threading_grasp_wrong_pose_D0_0013.npz",
+    "numeric_only_sha256": "40bb51c19c30a2f41ae540f6d6e856418b5b62e43447dfdaf0268ac053f4dda6",
+    "image_integration": {
+      "sha256": "32490ac0282c43b6daa8fbafa4520a1e3e788c88ce43a235907f5681717cdf7a",
+      "frames": 499,
+      "preserved_members": 17,
+      "camera_source": "state_rerender"
+    },
+    "original_truncated_members": [
+      "camera_images.npy"
+    ]
+  }
+]

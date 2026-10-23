@@ -1,13 +1,28 @@
 #!/usr/bin/env python
 """Unit tests for MimicGen-style recovery augmentation helpers."""
 
+import types
+
 import numpy as np
 
 from error_benchmark.framework.recovery_mimicgen import (
     build_recovery_subtask_specs,
+    infer_manipulated_object,
     infer_target_pose_from_action,
     resolve_subtask_object_ref,
 )
+
+
+def _demo(eef, objpos, subtasks):
+    """Lightweight RecoveryDemo stand-in for anchor-inference tests."""
+    return types.SimpleNamespace(
+        eef_positions=np.asarray(eef, dtype=float),
+        object_positions={k: np.asarray(v, dtype=float) for k, v in objpos.items()},
+        subtasks=[
+            types.SimpleNamespace(label=lbl, start_step=s, end_step=e)
+            for (lbl, s, e) in subtasks
+        ],
+    )
 from error_benchmark.framework.recovery_types import RECOVERY_SUBTASKS
 from error_benchmark.framework.utils.pose_transforms import (
     make_pose,
@@ -106,3 +121,55 @@ class TestTargetPoseInference:
             ]
         )
         np.testing.assert_allclose(target_pose[:3, :3], expected, atol=1e-6)
+
+
+class TestInferManipulatedObject:
+    """Anchor must follow the object the recovery GRASPS, not the error label.
+
+    Object-centric warps only land on-target when the anchor is the object the
+    recovery actually manipulates. Error-scene labels name the object the error
+    involved, which for multi-object tasks (stack_three / three_piece_assembly)
+    is frequently a different object than the re-grasped one.
+    """
+
+    def test_overrides_when_scene_label_is_not_grasped_object(self):
+        # stack_three-like: recovery re-grasps cubeC (~1 cm at grasp end) but the
+        # error-scene label points at cubeA (~15 cm away) -> must correct to cubeC.
+        T = 10
+        eef = np.tile([0.0, 0.0, 0.90], (T, 1))
+        eef[-1] = [0.0, 0.0, 0.81]
+        objpos = {
+            "cubeA": np.tile([0.15, 0.0, 0.80], (T, 1)),
+            "cubeB": np.tile([-0.15, 0.0, 0.80], (T, 1)),
+            "cubeC": np.tile([0.0, 0.0, 0.80], (T, 1)),
+        }
+        demo = _demo(eef, objpos, [("pre_grasp", 0, 9), ("post_grasp", 9, 9)])
+        assert infer_manipulated_object([demo], "cubeA") == "cubeC"
+
+    def test_keeps_scene_label_when_it_is_grasped_object(self):
+        # coffee-like single-object task: scene label == grasped -> unchanged.
+        T = 10
+        eef = np.tile([0.0, 0.0, 0.90], (T, 1))
+        eef[-1] = [0.0, 0.0, 0.81]
+        objpos = {
+            "coffee_pod": np.tile([0.0, 0.0, 0.80], (T, 1)),
+            "coffee_machine": np.tile([0.30, 0.0, 0.80], (T, 1)),
+        }
+        demo = _demo(eef, objpos, [("pre_grasp", 0, 9)])
+        assert infer_manipulated_object([demo], "coffee_pod") == "coffee_pod"
+
+    def test_keeps_scene_label_when_grasp_not_confident(self):
+        # EEF never gets within the grasp-confidence radius of any object
+        # (nearest cubeC ~10 cm) -> do NOT override; keep scene label.
+        T = 8
+        eef = np.tile([0.0, 0.0, 1.0], (T, 1))
+        eef[-1] = [0.0, 0.0, 0.90]
+        objpos = {
+            "cubeA": np.tile([0.30, 0.0, 0.80], (T, 1)),
+            "cubeC": np.tile([0.0, 0.0, 0.80], (T, 1)),
+        }
+        demo = _demo(eef, objpos, [("pre_grasp", 0, 7)])
+        assert infer_manipulated_object([demo], "cubeA") == "cubeA"
+
+    def test_empty_sources_returns_scene_label(self):
+        assert infer_manipulated_object([], "cubeA") == "cubeA"

@@ -213,12 +213,12 @@ replay:
   max_acceptable_drift: 0.005
   warm_start_steps: 5
 
-# ─── Evaluation (reused from v4) ───
+# ─── Evaluation (RecoverBench protocol — see EVALUATION.md §1/§2) ───
 evaluation:
-  max_steps: 400
+  max_steps: 500          # EVALUATION.md §2: at most 500 sim steps per rollout
   warm_start_steps: 5
   seed_mode: "both"
-  seeds_per_scene: 3
+  seeds_per_scene: 1       # EVALUATION.md §2: each scene is evaluated exactly once
   random_action_scale: 0.1
   models:
     bc_rnn: "bc_rnn_checkpoints/bc_rnn_pick_place/20260217112532/models/model_epoch_600.pth"  # resolve via ${BC_RNN_CHECKPOINT_ROOT} or project-root-relative

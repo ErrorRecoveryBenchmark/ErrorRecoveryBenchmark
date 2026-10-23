@@ -51,8 +51,8 @@ help:
 test: test-unit
 
 test-unit:
-	@echo "Running v5 unit tests..."
-	pytest error_benchmark/tests/unit/test_v5_*.py -v
+	@echo "Running all unit tests..."
+	pytest error_benchmark/tests/unit -v --continue-on-collection-errors
 
 smoke: v5-smoke
 

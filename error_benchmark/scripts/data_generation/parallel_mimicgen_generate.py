@@ -9,12 +9,12 @@ Usage:
     # Generate pick_place_d0 with 96 workers
     MUJOCO_GL=egl python parallel_mimicgen_generate.py \
         --task pick_place_d0 --num_demos 1000 --num_workers 96 \
-        --output /HOME/.../mimicgen_datasets/core/pick_place_d0.hdf5
+        --output /path/to/mimicgen_datasets/core/pick_place_d0.hdf5
 
     # Generate threading_d1 with 96 workers
     MUJOCO_GL=egl python parallel_mimicgen_generate.py \
         --task threading_d1 --num_demos 1000 --num_workers 96 \
-        --output /HOME/.../mimicgen_datasets/core/threading_d1.hdf5
+        --output /path/to/mimicgen_datasets/core/threading_d1.hdf5
 """
 
 import argparse

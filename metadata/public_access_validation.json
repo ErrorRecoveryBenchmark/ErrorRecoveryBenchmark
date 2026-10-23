@@ -1,0 +1,34 @@
+{
+  "revision": "c4cf11acf5bd9e3c91a13e3b70251a2d1a540cb1",
+  "authenticated": false,
+  "private": false,
+  "gated": false,
+  "archive_checks": [
+    {
+      "file": "eval_data.tar",
+      "public_get_status": 206,
+      "lfs_sha256_match": true
+    },
+    {
+      "file": "training_scenes.tar",
+      "public_get_status": 206,
+      "lfs_sha256_match": true
+    },
+    {
+      "file": "training_data.tar",
+      "public_get_status": 206,
+      "lfs_sha256_match": true
+    },
+    {
+      "file": "recovery_mimicgen_generated.tar",
+      "public_get_status": 206,
+      "lfs_sha256_match": true
+    },
+    {
+      "file": "recovery_training_success_from_error.tar",
+      "public_get_status": 206,
+      "lfs_sha256_match": true
+    }
+  ],
+  "metadata_exact_match": true
+}

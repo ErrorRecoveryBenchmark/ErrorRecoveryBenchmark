@@ -54,23 +54,26 @@ class FakeAugmentedDemo:
 class FakeAugmenter:
     def __init__(self, env_wrapper, task_config, aug_config, rng):
         self.env_wrapper = env_wrapper
+        self.call_index = 0
 
-    def _replay_with_warping(self, demo, scene):
+    def _replay_with_warping(self, demo, scene, video_dir=None):
         scene_id = scene.get("scene_id")
-        if scene_id == "scene_success":
-            return FakeAugmentedDemo(
-                augmented_id="aug_scene_success",
-                metadata={
-                    "base_scene_id": scene_id,
-                    "variant_id": "scene_success__variant_0000",
-                    "variant_index": 0,
-                    "randomized_objects": ["cubeA"],
-                    "anchored_objects": ["cubeB"],
-                },
-            )
-        if scene_id == "scene_error":
+        variant_index = self.call_index
+        self.call_index += 1
+        if variant_index == 0:
+            return None
+        if variant_index == 1:
             raise ValueError("bad source sequence")
-        return None
+        return FakeAugmentedDemo(
+            augmented_id="aug_scene_origin",
+            metadata={
+                "base_scene_id": scene_id,
+                "variant_id": "scene_origin__variant_0002",
+                "variant_index": variant_index,
+                "randomized_objects": ["cubeA"],
+                "anchored_objects": ["cubeB"],
+            },
+        )
 
 
 def _make_demo(success=True):
@@ -261,9 +264,7 @@ def test_validator_action_replay_marks_success_match():
 
 def test_validator_scene_augmentation_reports_augmentability():
     scenes = [
-        {"scene_id": "scene_success", "_npz_path": "dummy_success.npz"},
-        {"scene_id": "scene_fail", "_npz_path": "dummy_fail.npz"},
-        {"scene_id": "scene_error", "_npz_path": "dummy_error.npz"},
+        {"scene_id": "scene_origin", "_npz_path": "dummy_origin.npz"},
     ]
 
     validator = RecoveryDemoValidator(
@@ -289,15 +290,15 @@ def test_validator_scene_augmentation_reports_augmentability():
     assert scene_aug["tested_variant_count"] == 3
     assert scene_aug["success_count"] == 1
     assert scene_aug["is_augmentable"] is True
-    assert scene_aug["successful_scene_ids"] == ["scene_success"]
-    assert scene_aug["successful_variant_ids"] == ["scene_success__variant_0000"]
+    assert scene_aug["successful_scene_ids"] == ["scene_origin"]
+    assert scene_aug["successful_variant_ids"] == ["scene_origin__variant_0002"]
     assert scene_aug["failure_reason_counts"]["scene_replay_not_success_or_empty"] == 1
     assert scene_aug["failure_reason_counts"]["exception_ValueError"] == 1
     success_result = next(
         result for result in scene_aug["scene_results"]
-        if result["scene_id"] == "scene_success"
+        if result["success"]
     )
-    assert success_result["variant_id"] == "scene_success__variant_0000"
+    assert success_result["variant_id"] == "scene_origin__variant_0002"
     assert success_result["randomized_objects"] == ["cubeA"]
     assert success_result["anchored_objects"] == ["cubeB"]
     assert record["summary"]["augmentable"] is True

@@ -1,37 +1,30 @@
-# Example Data
+# Small runnable samples
 
-This directory contains small sample data for testing the RecoverBench pipeline without downloading the full dataset (~30 GB).
+This directory includes five pick_place error-scene NPZ/JSON pairs and one human
+and one augmented recovery NPZ. The recovery files are copied without modification
+from the core training archive; `recovery_demo_sample/provenance.json` records
+archive member names, sizes, action counts, and SHA-256 hashes.
 
-## Directory Structure
+Run a CPU-only format check from the repository root:
 
-### seed_demos/
+```bash
+python scripts/inspect_examples.py
+```
 
-6 HDF5 files (one per task, ~6 KB each) containing clean demonstration seeds used by MimicGen. These are minimal reference demos; the full prepared datasets are in the release data package.
+This checks arrays, trajectory lengths, JSON metadata, and sample hashes. It does
+not run a policy or prove successful simulator replay. See
+[DATA_FORMAT.md](../docs/DATA_FORMAT.md) for optional fields and array conventions.
 
-- coffee.hdf5
-- pick_place.hdf5
-- stack.hdf5
-- stack_three.hdf5
-- threading.hdf5
-- three_piece_assembly.hdf5
+`seed_demos/` is an empty placeholder; upstream seeds are not bundled. To obtain
+them, run `python scripts/download_data.py data --seeds`. The three core archives
+are approximately 9 GB compressed; upstream seeds and prepared training formats
+require additional disk space. See [RELEASE.md](../docs/RELEASE.md).
 
-### error_scenes_sample/
+## Replay validation scope
 
-5 error scene pairs (NPZ + JSON) from the pick_place task, showing different error subtypes. These demonstrate the output format of the v5 error injection pipeline.
-
-### recovery_demo_sample/
-
-Sample recovery demonstration NPZ files from the stack task. These demonstrate the output format of the human teleoperation collection phase.
-
-## Getting Full Data
-
-Download the complete dataset from [Zenodo / HuggingFace Datasets] (link TBD) and set:
-
-    export BENCHMARK_DATA=/path/to/extracted/release_data
-
-The full dataset includes:
-- seed_demos/ (6 HDF5 files)
-- mimicgen_prepared/ (6 prepared HDF5 datasets, ~22 GB)
-- error_scenes/ (11,004 scene pairs across 6 tasks)
-- recovery_demos_human/ (973 human recovery demonstrations)
-- recovery_demos_augmented/ (8,957 augmented recovery demonstrations)
+A local check with MuJoCo 2.3.2 / robosuite 1.4.1 restored both samples' states.
+The human coffee sample replayed with a final end-effector deviation below 1 mm.
+The augmented stack sample showed approximately 12 cm of final end-effector drift,
+above the existing 5 cm replay threshold. It remains as a transparent historical
+format example, not a certified replay-success example. This does not establish
+full-dataset replay success. See `recovery_demo_sample/replay_validation.json`.

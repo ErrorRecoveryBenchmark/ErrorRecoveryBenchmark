@@ -208,6 +208,7 @@ class TestBug4AugmentedReplaySettling:
         has_settle = (
             "settle_physics" in source
             or "settling" in source.lower()
+            or "_settle_max" in source
             or re.search(r"settle.*before.*replay", source, re.IGNORECASE) is not None
         )
         assert has_settle, (

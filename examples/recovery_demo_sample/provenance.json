@@ -1,0 +1,18 @@
+[
+  {
+    "file": "recovery_coffee_collision_holding_D0_0011.npz",
+    "archive": "training_data.tar",
+    "archive_member": "recovery_demos_human/coffee/collision_holding_D0/recovery_coffee_collision_holding_D0_0011.npz",
+    "num_steps": 77,
+    "bytes": 1086307,
+    "sha256": "216e2ceac4b55237ef88b8930ba060c51cc2f468f5b2aa2f908a0f9a40f0c4f8"
+  },
+  {
+    "file": "aug_recovery_stack_drop_at_wrong_place_D1_0000_v5_train_drop_at_wrong_place_D1_004_c41a0e14_6833.npz",
+    "archive": "training_data.tar",
+    "archive_member": "recovery_demos_augmented/stack/drop_at_wrong_place_D1/aug_recovery_stack_drop_at_wrong_place_D1_0000_v5_train_drop_at_wrong_place_D1_004_c41a0e14_6833.npz",
+    "num_steps": 57,
+    "bytes": 23599,
+    "sha256": "de79b592038f1d0c811249657b0f92d8cf626b02e28c2fdd258db8032f82f953"
+  }
+]
