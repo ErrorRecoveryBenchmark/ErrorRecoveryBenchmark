@@ -169,8 +169,8 @@ MUJOCO_GL=egl python error_benchmark/scripts/conversion/4c_convert_recovery_to_b
 ### Training & Evaluation
 
 ```bash
-# BC-RNN baseline training
-bash error_benchmark/scripts/training/train_bc_rnn_baseline.sh
+# BC-RNN baseline training with the paper's configs (error_benchmark/configs/bc_rnn/, 50 epochs)
+bash error_benchmark/scripts/training/train_bc_rnn_baseline.sh stack 0 recovery /path/to/stack_recovery.hdf5
 
 # Pi0.5 LoRA finetuning
 python error_benchmark/scripts/training/train_pi05_merged.py --task stack
