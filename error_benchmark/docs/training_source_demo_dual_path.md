@@ -1,6 +1,6 @@
 # Training Recovery Demo Pipeline Overview
 
-This document provides a quick overview of the pipeline. The term `training source demo` refers to the data source used for recovery training, i.e., the `training recovery demo`.
+This document provides a quick overview of the pipeline.
 
 The entire pipeline can be understood as two steps:
 
@@ -117,12 +117,7 @@ Entry script:
 
 - `error_benchmark/scripts/augmentation/backfill_recovery_target_poses.py`
 
-The background for this step is:
-
-- Early collected demos may have only recorded `actions` and `eef_positions`
-- But the Stage 3 augmenter requires source demos to also have `target_poses`, `eef_orientations`, and valid `subtasks`
-
-So this step does not add new data, but fills in fields needed for augmentation in existing `RecoveryDemo`.
+Stage 3 requires source demos to have `target_poses`, `eef_orientations` and valid `subtasks`; this step fills them in.
 
 If a demo is missing these fields, `RecoveryAugmenter._validate_source_demo()` will raise an error directly.
 
@@ -139,10 +134,7 @@ There are two types of inputs:
 - source demos: human `RecoveryDemo` under `outputs/recovery/demos/{task}/...`
 - target scenes: error scenes under `outputs/v5_training/{task}/scenes/...`
 
-Think of it as:
-
-- We first have a source trajectory showing "how the human recovered"
-- Then we transfer this recovery trajectory to other error scenes to see if it still succeeds
+Each source trajectory is transferred to other error scenes and kept if it succeeds.
 
 ### 5.2 What the Augmenter Actually Does
 
@@ -157,7 +149,7 @@ The core is `augment_scene()`:
 
 Besides the main path `3A scene augmentation`, the script also includes two extensions:
 
-- `3B cross-degree`：D0 → D1
+- `3B cross-degree`: D0 → D1
 - `3C cross-subtype`: transfer across subtypes within the same RBG
 
 For understanding purposes, just remember it as "taking existing recovery demos and performing MimicGen-style augmentation in new scenes".
@@ -220,58 +212,4 @@ So Stage 4 can be understood as:
 
 ## 7. What Role Does `prepared_source/{task}_src.hdf5` Play in This Pipeline
 
-This file is easily mistaken for a "source demo", but in the recovery mainline it is not the source recovery demo itself.
-
-It is more like a foundational dependency for the MimicGen side:
-
-- `RecoveryAugmenter._get_env_interface()` reads `env_interface` from here
-- The `scene aug preflight` in post-collection validation also depends on it
-
-So a more accurate understanding is:
-
-- `RecoveryDemo` is the actual source demo in our pipeline
-- `prepared_source/{task}_src.hdf5` is a base dataset prepared to make the MimicGen-style augmenter work correctly
-
-## 8. What Has Already Been Produced in the Current Checkout
-
-From the current directory snapshot, the recovery mainline already has concrete outputs, primarily concentrated on `stack`.
-
-### 8.1 Human Source Demos
-
-Currently visible:
-
-- `error_benchmark/outputs/recovery/demos/stack/manifest.json`
-- `error_benchmark/outputs/recovery/demos/stack/human_demo_test_report.json`
-
-Where:
-
-- `manifest.json` records `29` demos
-- The file system currently shows `24` `recovery_*.npz` files
-
-The mismatch between manifest and directory file count indicates multiple experiment rounds; the current snapshot is not from a single clean run.
-
-### 8.2 Augmentation Results
-
-Also currently visible:
-
-- `error_benchmark/outputs/recovery/augmented/stack/augmentation_manifest.json`
-
-The latest consistent record traceable from the manifest is:
-
-- `position_error_D1` has `1` augmentation entry
-
-Additional `aug_*.npz` files are visible in the directory, but for formal reporting, prefer the traceable records in the manifest.
-
-## 9. How to Introduce This Pipeline
-
-In a few sentences:
-
-1. We first collect a small batch of recovery demos via human teleoperation from v5-generated error scenes; these are the source demos.
-2. Then we use MimicGen-style trajectory transfer and scene resampling to augment these source demos into more recovery trajectories.
-3. Finally in Stage 4, we convert human demos and augmented demos together into MCM/diffusion training data.
-
-## 10. Shortest Summary
-
-One-sentence summary:
-
-- The core of this pipeline is: "first manually collect source recovery demos, then augment them into augmented recovery demos using MimicGen-style methods, and finally convert both together for training".
+`prepared_source/{task}_src.hdf5` supplies the MimicGen `env_interface`.

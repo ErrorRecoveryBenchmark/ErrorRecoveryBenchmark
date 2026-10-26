@@ -145,10 +145,10 @@ for task in sorted(os.listdir('error_benchmark/outputs/recovery/demos')):
 
 ---
 
-## 5. Transfer to Cluster After Collection
+## 5. Transfer to a Compute Server After Collection
 
 ```bash
-scp -r error_benchmark/outputs/recovery/demos/ user@cluster:/path/to/error_recovery/error_benchmark/outputs/recovery/demos/
+scp -r error_benchmark/outputs/recovery/demos/ user@server:/path/to/error_recovery/error_benchmark/outputs/recovery/demos/
 ```
 
 ---
