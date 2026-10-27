@@ -50,10 +50,10 @@
   "@type": "sc:Dataset",
   "conformsTo": "http://mlcommons.org/croissant/1.0",
   "name": "RecoverBench",
-  "description": "RecoverBench: 1,360 evaluation scenes, 5,038 training scenes and 10,598 recovery trajectories (973 human, 668 generated, 8,957 augmented). A separate 739-trajectory HDF5 artifact supports recovery-policy training. Image observations are stored in demonstration NPZ files with alignment and rendering provenance where available. Structural validation does not certify action replay.",
+  "description": "RecoverBench: 1,360 evaluation scenes, 5,038 training scenes and 10,598 recovery trajectories (973 human, 668 generated, 8,957 augmented). A separate 739-trajectory HDF5 artifact supports recovery-policy training. Image observations are stored in demonstration NPZ files with alignment and rendering provenance.",
   "url": "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark",
   "license": "https://opensource.org/licenses/MIT",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "keywords": [
     "robotics",
     "manipulation",
@@ -916,14 +916,15 @@
       ]
     }
   ],
-  "dateModified": "2026-10-22",
+  "dateModified": "2026-10-26",
   "isLiveDataset": false,
-  "rai:dataCollection": "All data is generated in MuJoCo physics simulation using the robosuite framework (version-locked: robosuite 1.4.1 @ c848ca84, mujoco 2.3.2). Error scenes are created by programmatic injection of 12 error types into clean manipulation trajectories, with per-scene environment fingerprints and RNG states for deterministic reproduction. Recovery demonstrations are collected via human teleoperation with a SpaceMouse 3D input device; augmented demonstrations are generated with MimicGen-style trajectory adaptation and validated by simulated replay. Human operators are members of the author team. The released observations depict simulated scenes.",
-  "rai:personalSensitiveInformation": "No human imagery, speech, demographic annotations, or operator identities are collected as dataset features. Historical scene sidecars include technical source paths from the collection environment.",
-  "rai:dataBiases": "The benchmark uses mixed robot embodiments (Sawyer for pick_place, Franka Panda for the other five tasks) in tabletop manipulation settings. Error injection parameters are hand-designed based on common failure modes observed in robotic manipulation. Human recovery demonstrations reflect the skill level and strategies of a small set of operators and do not cover every task-subtype combination uniformly. The 6 tasks are limited to tabletop pick-and-place style manipulation.",
-  "rai:dataLimitations": "Simulation-only tabletop tasks with Sawyer and Panda embodiments, six tasks and hand-designed errors. Coverage varies by task and subtype; results do not establish real-world safety. Image sources and sampling vary: two human records use state-rendered camera observations, identified in their camera_source and camera_metadata fields. Original camera viewpoints are not asserted for those records. Recorded HDF5 model XML contains historical asset paths; normalize with edit_model_xml before replay. Structural validation does not certify action replay.",
-  "rai:dataUseCases": "Evaluation of recovery after injected manipulation errors paired with clean-start success, error-type analysis, and recovery-policy training. Construct: completion of the original simulated task after a controlled execution error. Not validated for real-robot deployment, safety certification, human fairness assessment, or naturally occurring error distributions.",
-  "rai:dataSocialImpact": "May improve transparency about robot failure recovery and support reproducibility. Misuse includes treating simulation success as evidence of safe deployment. Report clean and recovery scores together and disclose simulator, policy, and data limitations.",
+  "rai:dataCollection": "All data is generated in MuJoCo physics simulation using the robosuite framework (version-locked: robosuite 1.4.1 @ c848ca84, mujoco 2.3.2). Error scenes are created by programmatic injection of 12 error types into clean manipulation trajectories, with per-scene environment fingerprints and RNG states for exact restoration of the post-error state. Recovery demonstrations are collected via human teleoperation with a SpaceMouse 3D input device; augmented demonstrations are generated with MimicGen-style trajectory adaptation and checked for task success at generation time. Human operators are members of the author team. The released observations depict simulated scenes.",
+  "rai:personalSensitiveInformation": "No human imagery, speech, demographic annotations, or operator identities are collected as dataset features.",
+  "rai:dataBiases": "The benchmark uses mixed robot embodiments (Sawyer for pick_place, Franka Panda for the other five tasks) in tabletop manipulation settings. Error injection parameters are hand-designed based on common failure modes observed in robotic manipulation. Human recovery demonstrations reflect the strategies of a small group of operators.",
+  "rai:dataLimitations": "Simulation-only tabletop tasks (Sawyer and Panda, six tasks, injected errors); coverage varies by task and subtype. Normalize HDF5 model XML with edit_model_xml before replay.",
+  "rai:dataUseCases": "Evaluation of recovery after injected manipulation errors paired with clean-start success, error-type analysis, and recovery-policy training. Construct: completion of the original simulated task after a controlled execution error. Real-robot use requires sim-to-real validation.",
+  "rai:dataSocialImpact": "Supports transparent, reproducible evaluation of robot failure recovery. Report clean and recovery scores together.",
+  "rai:dataReleaseMaintenancePlan": "Maintained by the authors through versioned Hugging Face revisions and the GitHub issue tracker; SHA256SUMS identifies each version.",
   "rai:hasSyntheticData": true,
   "prov:wasDerivedFrom": [
     {

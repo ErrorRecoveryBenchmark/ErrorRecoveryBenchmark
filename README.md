@@ -65,11 +65,11 @@ This adds a local `macros_private.py` and, on Windows, copies the installed
 MuJoCo 2.3.2 DLL to the location expected by the pinned robosuite. Existing private
 settings are preserved. Use `MUJOCO_GL=glfw` for local display runs.
 
-The restored `3c_generate_from_error_scene.py` is the historical Linux/EGL batch
+`3c_generate_from_error_scene.py` is the Linux/EGL batch
 generator; it requires prepared MimicGen sources and training scenes. The
 clean-start evaluator additionally requires `openpi-client` and `tyro` in the
 policy-evaluation environment. These full policy runs require trained checkpoints.
-Historical dependency patches are provided under `patches/`; review and run
+Dependency patches are provided under `patches/`; review and run
 `git apply --check` in the corresponding pinned submodule before applying them.
 
 ### Set Environment Variables
@@ -81,7 +81,7 @@ export PYTHONPATH="$(pwd):$(pwd)/shared/mimicgen_workspace/robosuite:$(pwd)/shar
 
 ### Download Data
 
-The v1.1.1 release contains five standard data archives (approximately 9.7 GB), with image observations stored directly in demonstration NPZ files. The corpus contains 973 human, 668 generated and 8,957 augmented trajectories (10,598 total). A separate 739-trajectory HDF5 artifact supports the reported recovery-policy experiments. See [data formats](docs/DATA_FORMAT.md) for image alignment and provenance, and [the release guide](docs/RELEASE.md) for reproducibility.
+The v1.1.2 release contains five standard data archives (approximately 9.7 GB), with image observations stored directly in demonstration NPZ files. The corpus contains 973 human, 668 generated and 8,957 augmented trajectories (10,598 total). A separate 739-trajectory HDF5 artifact supports the reported recovery-policy experiments. See [data formats](docs/DATA_FORMAT.md) for image alignment and provenance, and [the release guide](docs/RELEASE.md) for reproducibility.
 
 ```bash
 python scripts/download_data.py data
@@ -220,7 +220,7 @@ Each error scene contains:
 
 ### Recovery Demos (`*.npz`)
 
-The human NPZ format contains the following fields. Historical augmented files may contain only actions, states, eef_positions, and gripper_states; optional fields must not be assumed to exist. See [DATA_FORMAT.md](docs/DATA_FORMAT.md).
+The human NPZ format contains the following fields. Augmented files contain actions, states, eef_positions and gripper_states. See [DATA_FORMAT.md](docs/DATA_FORMAT.md).
 - `actions`: robot action sequence (T, action_dim)
 - `states`: full MuJoCo state sequence (T+1, state_dim) for the human NPZ format
 - `camera_images`: optional RGB observations; frame count and resolution vary by recording

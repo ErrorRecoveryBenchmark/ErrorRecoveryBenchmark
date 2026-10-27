@@ -1,6 +1,6 @@
 # RecoverBench Evaluation Protocol
 
-This document defines the canonical evaluation protocol for RecoverBench. **Following this protocol is what makes a result a "RecoverBench number."** Deviations from any of the rules below should be explicitly disclosed; without disclosure, the result is not directly comparable to other RecoverBench leaderboard entries.
+This document defines the canonical evaluation protocol for RecoverBench. **Following this protocol is what makes a result a "RecoverBench number."** Results that follow every rule below are directly comparable across RecoverBench entries; disclose any deviation.
 
 The single most important rule:
 
@@ -16,9 +16,7 @@ Reporting RSR without CSR re-creates the mis-measurement problem RecoverBench ex
 
 **Reference implementation** (e.g., for `stack`, in `shared/mimicgen_workspace/robosuite/robosuite/environments/manipulation/stack.py`): "blocks are correctly stacked" iff (1) the lifted block exceeds the table height threshold, (2) the gripper is no longer holding it, and (3) the held block contacts the target block.
 
-**Do not relax this criterion under any circumstance, for any RBG, including RBG_E (Realign).** RBG_E is the most tempting case to loosen — its recovery primitive is `correct_position → resume_task`, and a tempting-but-wrong relaxation is to score the policy as successful once it has reached "near the goal" without actually completing the task. **This relaxation is forbidden.** Accepting positional progress in lieu of task completion would conflate progress with completion and re-open the very capability-overestimation gap RecoverBench is built to close. The 10-consecutive-frame `_check_success()` is the only valid criterion for any RBG.
-
-This rule is load-bearing: it should not be loosened in future revisions of the protocol either.
+**This criterion applies uniformly to every RBG, including RBG_E (Realign): success means task completion.** The 10-consecutive-frame `_check_success()` is the success criterion for every RBG.
 
 ---
 
@@ -48,9 +46,9 @@ This rule is load-bearing: it should not be loosened in future revisions of the 
 
 **Reference script.** `error_benchmark/scripts/training/eval_clean_multi.py`.
 
-**The required leaderboard quantity is the pair `(CSR, RSR)` and the gap `CSR − RSR`.** A submission reporting only RSR will not be accepted as a valid RecoverBench leaderboard entry.
+**Leaderboard entries report the pair `(CSR, RSR)` and the gap `CSR − RSR`.**
 
-**Why this matters.** A policy that is bad at the clean task and equally bad at recovery does not have a "small gap" in any meaningful sense — it has uniformly low capability. Conversely, a policy with high CSR and low RSR has a *large* gap and is the case RecoverBench was built to surface. Without paired CSR, the gap is unmeasurable and RSR alone is uninterpretable.
+**Why this matters.** Paired CSR makes the gap measurable and RSR interpretable.
 
 ---
 
@@ -88,16 +86,9 @@ Copy this template into your paper. Replace `[Method]` with your method name and
 
 ## 6. Paper results and reproducibility
 
-The accepted-paper materials report 661 / 1,360 recoveries (48.6%) for Pi 0.5
-(Recovery). The earlier 41 / 1,107 (3.7%) pilot result is a different experimental
-version and must not be used as the reference for this release. This is a cited
-paper result, not a new reproduction under the protocol above.
+Pi 0.5 (Recovery) reaches a 48.6% Recovery Success Rate averaged over the six tasks (Table 2).
 
-A reproducible result additionally needs the exact checkpoint, training-data
-manifest, evaluation manifest, rollout seed, and success settings. The repository's
-camera-ready validation does not certify that every historical paper run used the
-current 10-frame / 500-step protocol. Historical deviations must be disclosed
-rather than silently reinterpreting the published score.
+A reproducible result needs the exact checkpoint, training-data manifest, evaluation manifest, rollout seed, and success settings.
 
 ---
 

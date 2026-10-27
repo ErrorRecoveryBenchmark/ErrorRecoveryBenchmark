@@ -4,7 +4,7 @@
 
 ## Summary (English)
 
-Operational tutorial for collecting human recovery demonstrations in RecoverBench (Stage 2 of the data pipeline). The shell commands and code blocks work as written; the surrounding prose is in English for the collection team. The rest of this document covers, in order: project overview, environment setup (including SpaceMouse on Linux), the SpaceMouse-driven teleoperation workflow, success-validation rules (10-frame `_check_success` hold + action-replay validation), batch collection scripts, and troubleshooting. For the broader RecoverBench framing, see [`../../../README.md`](../../../README.md), [`../../../EVALUATION.md`](../../../EVALUATION.md), and [`../../docs/recovery_pipeline.md`](../../docs/recovery_pipeline.md).
+Operational tutorial for collecting human recovery demonstrations in RecoverBench (Stage 2 of the data pipeline). The shell commands and code blocks work as written. This document covers, in order: project overview, environment setup (including SpaceMouse on Linux), the SpaceMouse-driven teleoperation workflow, success-validation rules (10-frame `_check_success` hold + action-replay validation), batch collection scripts, and troubleshooting. For the broader RecoverBench framing, see [`../../../README.md`](../../../README.md), [`../../../EVALUATION.md`](../../../EVALUATION.md), and [`../../docs/recovery_pipeline.md`](../../docs/recovery_pipeline.md).
 
 ---
 
@@ -12,7 +12,7 @@ Operational tutorial for collecting human recovery demonstrations in RecoverBenc
 
 RecoverBench requires human recovery demonstrations to train recovery policies. Operators use a SpaceMouse to teleoperate a Sawyer robot arm, recovering from injected error scenarios and completing the task.
 
-**Supported tasks are defined by `error_benchmark/configs/task_registry.yaml` in the portable package.**
+**Supported tasks are listed in `error_benchmark/configs/task_registry.yaml`.**
 
 View which tasks are included in the current package:
 
@@ -124,7 +124,7 @@ If the controls are too sensitive or too sluggish, modify these values (higher v
 
 ```bash
 conda activate recovery_collect
-cd /path/to/recovery_collection_portable  # or wherever you scp'd it
+cd /path/to/recovery_collection_portable
 
 # View available tasks in current package
 sed -n 's/^  \([A-Za-z0-9_][A-Za-z0-9_]*\):$/\1/p' error_benchmark/configs/task_registry.yaml
@@ -137,7 +137,7 @@ bash run_collection.sh pick_place grasp_misalignment_D0 8
 bash run_collection.sh stack collision_holding_D0 6
 bash run_collection.sh threading position_error_D0 6
 
-# D1 difficulty examples (optional, as needed)
+# D1 examples
 bash run_collection.sh pick_place grasp_misalignment_D1 4
 bash run_collection.sh stack drop_in_transit_D1 4
 ```
@@ -199,7 +199,7 @@ Records for each demo:
 - `scene_id` — Source error scene
 - `collection_validation` — Post-collection MimicGen compatibility check results
 
-Only demos with `success=true` and passing compatibility checks are recommended for subsequent MimicGen augmentation.
+Demos with `success=true` and passing compatibility checks feed MimicGen augmentation.
 
 ### human_demo_test_report.json
 
@@ -227,18 +227,13 @@ for task in sorted(os.listdir('outputs/recovery/demos')):
 
 ## 8. After Collection
 
-Transfer collection results back to the cluster via scp:
+Copy `outputs/recovery/demos/` to the machine that runs augmentation, then run `make recovery-augment RECOVERY_TASK=<task>`.
+
+Note: The portable package installs `robosuite` at the locked commit via `setup_env.sh` (see `ROBOSUITE_VERSION_LOCK.txt`) and includes `mimicgen`.
 
 ```bash
-scp -r outputs/recovery/demos/ user@cluster:/path/to/release_code/error_benchmark/outputs/recovery/demos/
-```
-
-Note: The portable package no longer bundles `robosuite`; instead it is installed locally on the target machine via `setup_env.sh` at a locked commit. `mimicgen` is still included. Lock information is in `ROBOSUITE_VERSION_LOCK.txt`.
-
-Then run MimicGen augmentation on the cluster:
-```bash
-cd /path/to/release_code
-conda activate mimicgen_env
+cd /path/to/RecoverBench
+conda activate error_recovery
 make recovery-augment RECOVERY_TASK=<task>
 # Run separately for each collected task
 ```
@@ -249,7 +244,7 @@ make recovery-augment RECOVERY_TASK=<task>
 1. Check USB connection: `lsusb | grep 256f`
 2. Check if udev rules are active
 3. Verify HID visibility: `python -c "import hid; print([d for d in hid.enumerate() if d['vendor_id']==0x256f])"`
-4. May need to unplug and replug the device
+4. Unplug and replug the device
 
 ### Render Window Black Screen
 - Confirm `MUJOCO_GL=glfw` (not `egl`)

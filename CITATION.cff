@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use RecoverBench, please cite the paper below. Please also credit MimicGen (see THIRD_PARTY_NOTICES.md)."
 title: "RecoverBench: A Systematic Benchmark for Error Recovery in Robotic Manipulation"
 abstract: "RecoverBench evaluates how manipulation policies recover from standardized, reproducible post-error simulator states. It provides a taxonomy of 12 Error Skills (24 subtypes at two degrees, grouped into 5 Recovery Behavior Groups), 1,360 evaluation error scenes over six robosuite/MuJoCo tasks, a separate training scene pool, and a corpus of 10,598 recovery trajectories."
-version: 1.1.0
-# TODO(authors): add date-released when release v1.1.0 is uploaded.
+version: 1.1.2
+date-released: 2026-10-26
 license: MIT  # exceptions: see THIRD_PARTY_NOTICES.md (NVIDIA Source Code License components; CC BY 4.0 source demonstrations)
 repository-code: "https://github.com/ErrorRecoveryBenchmark/ErrorRecoveryBenchmark"
 repository: "https://huggingface.co/datasets/ErrorRecovery/ErrorRecoveryBenchmark"

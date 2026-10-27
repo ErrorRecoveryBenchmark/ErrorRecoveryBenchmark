@@ -23,7 +23,7 @@ All other files in this repository, and the data files in the Hugging Face relea
 
 ### 2.1 Vendored MimicGen code
 
-`shared/mimicgen_workspace/mimicgen/` is a git submodule of MimicGen (https://github.com/NVlabs/mimicgen); the version used for the reported results is commit `72bd767c` (v1.0.1), with local patches. It keeps its own `LICENSE` and file headers. MimicGen's code is released under the NVIDIA Source Code License, reproduced in full in Section 2.5. MimicGen is credited by citation in the paper:
+`shared/mimicgen_workspace/mimicgen/` is a git submodule of MimicGen (https://github.com/NVlabs/mimicgen); the version used for the reported results is commit `72bd767c` (v1.0.1); the applied patches are listed in `patches/`. It keeps its own `LICENSE` and file headers. MimicGen's code is released under the NVIDIA Source Code License, reproduced in full in Section 2.5. MimicGen is credited by citation in the paper:
 
 > Ajay Mandlekar, Soroush Nasiriany, Bowen Wen, Iretiayo Akinola, Yashraj Narang, Linxi Fan, Yuke Zhu, Dieter Fox. MimicGen: A Data Generation System for Scalable Robot Learning using Human Demonstrations. 7th Annual Conference on Robot Learning (CoRL), 2023. https://arxiv.org/abs/2310.17596
 
